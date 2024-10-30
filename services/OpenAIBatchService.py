@@ -10,7 +10,7 @@ class OpenAIBatchService:
     config = yaml.safe_load(open("openai_config.yaml"))
     client = OpenAI(api_key=config['KEYS']['openai'])
 
-    def create_one_prompt_for_batch(self, document_id: str, text: str, company_name: str):
+    def create_one_prompt_for_batch(self, document_id: str, text: str, file_name: str, company_name: str):
         """
                 Analyze the sentiment of a document with respect to its short-term and long-term impact on the economy
 
@@ -47,9 +47,9 @@ class OpenAIBatchService:
                 "max_tokens": 3
             }
         }
-        return self.__add_to_batch(request, "batch_" + company_name + ".jsonl")
+        return self.__add_to_batch(request, file_name, company_name)
 
-    def send_batch(self, batch_file_name: str):
+    def send_batch(self, batch_file_name: str, company_name: str):
         """
                 Send a batch of requests and store the id of the sent batch into a file.
 
@@ -72,8 +72,8 @@ class OpenAIBatchService:
             }
         )
 
-        #bsp. "../data/batch_ids/Siemens"
-        with open(batch_file_name + "_batch_ids", 'a') as file:
+        #bsp. "data/batch_ids/Siemens"
+        with open("data/batch_ids/"+ company_name + "_batch_ids", 'a') as file:
             file.write('\n' + batch.id)
 
     def retrieve_batch_results(self, batch_id: str, company_name: str):
@@ -138,25 +138,25 @@ class OpenAIBatchService:
         """
         batch_ids = []
 
-        with open("../data/batch_ids" + company_name + "_batch_ids", "r") as file:
+        with open("data/batch_ids/" + company_name + "_batch_ids", "r") as file:
             for line in file:
                 batch_id = line.strip()
                 if batch_id:
                     batch_ids.append(batch_id)
         return batch_ids
 
-    def __add_to_batch(self, request: dict, file_name: str):
+    def __add_to_batch(self, request: dict, file_name: str, company_name: str):
         """
-                Add a request to a batch file.
+                Add a request to a batch file in data/batches/[company_name].
 
                 Parameters:
                     request (dict): The request to add.
-                    file_name (str): The name of the batch file.
+                    company_name (str): The name of the company
 
                 Returns:
                     None
         """
-        with open(file_name, 'a') as file:
+        with open("data/batches/" + company_name + "/" + file_name, 'a') as file:
             json_str = json.dumps(request)
             file.write(json_str + '\n')
 
@@ -169,7 +169,7 @@ class OpenAIBatchService:
 
             short_term_sentiment, long_term_sentiment = eval(response)
             #für jedes document noch das datum hinzufügen
-            file_path = f"../data/news/{company_name}/{document_id}"
+            file_path = f"data/news/{company_name}/{document_id}"
             with open(file_path, 'r') as file:
                 date_str = file.readline().split(',')[1]
                 date = datetime.strptime(date_str, "%d.%m.%Y")
@@ -182,7 +182,9 @@ class OpenAIBatchService:
             })
 
         df = pd.DataFrame(data, columns=["document_id", "date", "short_term_sentiment", "long_term_sentiment"])
+        print(df)
         min_date = df["date"].min().date()
         max_date = df["date"].max().date()
         pickle_filename = f"{min_date}_to_{max_date}.pkl"
+        print("test")
         df.to_pickle(pickle_filename)

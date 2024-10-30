@@ -17,4 +17,4 @@ app.include_router(openai_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":
-    uvicorn.run("app.main:app", host="localhost", port=4000)
+    uvicorn.run("main:app", host="localhost", port=4000)
