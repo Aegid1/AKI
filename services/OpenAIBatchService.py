@@ -1,14 +1,16 @@
 import json
 import os
 from datetime import datetime
-
 import pandas as pd
-from app.services.OpenAIService import OpenAIService
+import yaml
+from openai import OpenAI
+
 class OpenAIBatchService:
 
-    openaiservice = OpenAIService()
+    config = yaml.safe_load(open("openai_config.yaml"))
+    client = OpenAI(api_key=config['KEYS']['openai'])
 
-    def create_prompt_for_batch(self, document_id: str, text: str, company_name: str, time: str):
+    def create_one_prompt_for_batch(self, document_id: str, text: str, company_name: str):
         """
                 Analyze the sentiment of a document with respect to its short-term and long-term impact on the economy
 
@@ -45,23 +47,23 @@ class OpenAIBatchService:
                 "max_tokens": 3
             }
         }
-        return self.__add_to_batch(request, "batch_sentiments.jsonl" + company_name)
+        return self.__add_to_batch(request, "batch_" + company_name + ".jsonl")
 
-    def send_batch(self, batch_name: str):
+    def send_batch(self, batch_file_name: str):
         """
                 Send a batch of requests and store the id of the sent batch into a file.
 
                 Parameters:
-                    batch_name (str): The name of the batch file.
+                    batch_file_name (str): The name of the batch file.
 
                 Returns:
                     None
         """
-        batch_input_file = self.openaiservice.client.files.create(
-            file=open(batch_name, "rb"),
+        batch_input_file = self.client.files.create(
+            file=open(batch_file_name, "rb"),
             purpose="batch"
         )
-        batch = self.openaiservice.client.batches.create(
+        batch = self.client.batches.create(
             input_file_id=batch_input_file.id,
             endpoint="/v1/chat/completions",
             completion_window="24h",
@@ -70,8 +72,8 @@ class OpenAIBatchService:
             }
         )
 
-        #bsp. "Siemens_1_ids"
-        with open(batch_name+"_ids", 'a') as file:
+        #bsp. "../data/batch_ids/Siemens"
+        with open(batch_file_name + "_batch_ids", 'a') as file:
             file.write('\n' + batch.id)
 
     def retrieve_batch_results(self, batch_id: str, company_name: str):
@@ -82,11 +84,11 @@ class OpenAIBatchService:
                     batch_id (str): The ID of the batch.
 
         """
-        batch = self.openaiservice.client.batches.retrieve(batch_id)
+        batch = self.client.batches.retrieve(batch_id)
         if batch.status != "completed":
             return "Your batch is currently not ready and in the state: " + batch.status
 
-        output_file = self.openaiservice.client.files.content(batch.output_file_id)
+        output_file = self.client.files.content(batch.output_file_id)
 
         content = output_file.content
         content_str = content.decode('utf-8')
@@ -104,10 +106,10 @@ class OpenAIBatchService:
                 Returns:
                     str: The status of the batch.
         """
-        batch = self.openaiservice.client.batches.retrieve(batch_id)
+        batch = self.client.batches.retrieve(batch_id)
         return batch.status
 
-    def delete_batch_file(self, batch_name):
+    def delete_batch_ids_file(self, batch_name):
         """
                 Delete a batch file which contains the ids of the batches.
 
@@ -124,7 +126,7 @@ class OpenAIBatchService:
         except OSError as e:
             print(f"Error deleting file '{batch_name}': {e}")
 
-    def get_batch_ids(self, batch_name):
+    def get_batch_ids(self, company_name:str):
         """
                 Get batch IDs from a file.
 
@@ -136,7 +138,7 @@ class OpenAIBatchService:
         """
         batch_ids = []
 
-        with open(batch_name, "r") as file:
+        with open("../data/batch_ids" + company_name + "_batch_ids", "r") as file:
             for line in file:
                 batch_id = line.strip()
                 if batch_id:
@@ -169,7 +171,7 @@ class OpenAIBatchService:
             #für jedes document noch das datum hinzufügen
             file_path = f"../data/news/{company_name}/{document_id}"
             with open(file_path, 'r') as file:
-                date_str = file.readline().split(',')[0]
+                date_str = file.readline().split(',')[1]
                 date = datetime.strptime(date_str, "%d.%m.%Y")
 
             data.append({
@@ -179,7 +181,7 @@ class OpenAIBatchService:
                 "long_term_sentiment": long_term_sentiment
             })
 
-        df = pd.DataFrame(data, columns=["document_id", "short_term_sentiment", "long_term_sentiment"])
+        df = pd.DataFrame(data, columns=["document_id", "date", "short_term_sentiment", "long_term_sentiment"])
         min_date = df["date"].min().date()
         max_date = df["date"].max().date()
         pickle_filename = f"{min_date}_to_{max_date}.pkl"
