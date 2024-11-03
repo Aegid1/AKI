@@ -24,8 +24,8 @@ class OpenAIBatchService:
         prompt = (
                 "Think step by step. Analyze the sentiment of the following economic news article about the mentioned company "
                 "based on its short-term and long-term impact on the stock price of the mentioned company."
-                "Rate each on a scale from -5 to +5, where -5 indicates a very negative impact, 0 indicates a neutral impact, "
-                "and +5 indicates a very positive impact. "
+                "Rate each on a scale from -10 to +10, where -10 indicates a very negative impact, 0 indicates a neutral impact, "
+                "and +10 indicates a very positive impact. "
                 "Respond only with a tuple in the format ([short-term sentiment], [long-term sentiment]).\n\n"
                 "Article:\n" + text
         )
@@ -191,7 +191,7 @@ class OpenAIBatchService:
 
         min_date = df["date"].min().split(" ")[0]
         max_date = df["date"].max().split(" ")[0]
-        pickle_filename = f"data/sentiments/{company_name}/{min_date}_to_{max_date}.pkl"
+        pickle_filename = f"data/sentiments_news/{company_name}/{min_date}_to_{max_date}.pkl"
         df.to_pickle(pickle_filename)
 
     def __get_date_of_document(self, document_id, company_name):

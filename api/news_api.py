@@ -1,8 +1,8 @@
 import uuid
 import pandas as pd
 from fastapi import APIRouter, Depends
-from basemodel import NewsApiRequest
-from services import NewsService
+from basemodel.NewsApiRequest import NewsApiRequest
+from services.NewsService import NewsService
 
 router = APIRouter()
 
@@ -50,28 +50,36 @@ def store_articles_from_news_api(request: NewsApiRequest,
     articles_sorted.to_csv(f"/data/news/{request.company_name}/{request.company_name}_sorted.csv", index=False, header=False)
 
 
-@router.post("/articles/news/all")
-def store_all_articles_from_news_api(request: NewsApiRequest, news_api_service: NewsService = Depends()):
+@router.post("/articles/news/relevant_topics/all")
+def store_all_relevant_articles_from_news_api(request: NewsApiRequest, news_api_service: NewsService = Depends()):
     requested_pages = request.page_number
     current_page = 0
-    response = news_api_service.get_articles(request.topic, current_page, request.start_date, request.end_date)
-    articles = response.get("news")
-
+    relevant_topics = news_api_service.get_relevant_topics_as_list(request.company_name)
     articles_list = []
-    while response.get("count") != 0:
-        print("PAGE: " + str(current_page))
-        for article in articles:
-            content = article.get("text")
-            date = article.get("date")
-            converted_date = pd.to_datetime(date, format='%d %b %Y %H:%M:%S %Z')
-            articles_list.append((str(uuid.uuid4()), converted_date, content))
-
-        current_page += 1
-        if current_page == requested_pages:
-            break
+    for topic in relevant_topics:
+        print(f"TOPIC: {topic}")
         response = news_api_service.get_articles(request.topic, current_page, request.start_date, request.end_date)
         articles = response.get("news")
+
+        while response.get("count") != 0:
+            print("PAGE: " + str(current_page))
+            for article in articles:
+                content = article.get("text")
+                date = article.get("date")
+                converted_date = pd.to_datetime(date, format='%d %b %Y %H:%M:%S %Z')
+                articles_list.append((str(uuid.uuid4()), converted_date, content))
+
+            current_page += 1
+            if current_page == requested_pages:
+                break
+            response = news_api_service.get_articles(request.topic, current_page, request.start_date, request.end_date)
+            articles = response.get("news")
 
     articles_df = pd.DataFrame(articles_list, columns=['UUID', 'Date', 'Text'])
     articles_sorted = articles_df.sort_values(by='Date')
     articles_sorted.to_csv(f"/data/news/{request.company_name}/{request.company_name}_sorted.csv", index=False, header=False)
+
+
+@router.post("/articles/news/topics/{company_name}")
+def store_relevant_related_topics(company_name: str, news_service: NewsService = Depends()):
+    news_service.store_relevant_related_topics(company_name)
