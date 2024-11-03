@@ -57,7 +57,6 @@ def retrieve_all_batches(company_name:str, batch_api_service: OpenAIBatchService
         None
     """
     batch_ids = batch_api_service.get_batch_ids(company_name)
-    print(batch_ids)
     for batch_id in batch_ids:
         batch_api_service.retrieve_batch_results(batch_id, company_name)
 

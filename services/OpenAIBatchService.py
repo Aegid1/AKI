@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 from datetime import datetime
@@ -44,7 +45,7 @@ class OpenAIBatchService:
                         "content": prompt
                     }
                 ],
-                "max_tokens": 3
+                "max_tokens": 10
             }
         }
         return self.__add_to_batch(request, file_name, company_name)
@@ -162,18 +163,20 @@ class OpenAIBatchService:
 
     def __save_batch_results_in_pickle_file(self, results, company_name:str):
         data = []
+        #iterate through all results
         for result in results:
             document_id = result.get("custom_id")
             response = result.get("response").get("body").get("choices")[0].get("message").get("content")  # gets the actual result
-            # hier alles in einen dataframe schreiben und zu jedem ergebnis mit der uuid das entsprechende datum hinzufügen-> uuid | datum | sentiment
 
-            short_term_sentiment, long_term_sentiment = eval(response)
-            #für jedes document noch das datum hinzufügen
-            file_path = f"data/news/{company_name}/{document_id}"
-            with open(file_path, 'r') as file:
-                date_str = file.readline().split(',')[1]
-                date = datetime.strptime(date_str, "%d.%m.%Y")
+            #get the determined long-term and short-term sentiment of the result
+            try:
+                short_term_sentiment, long_term_sentiment = eval(response)
+            except (SyntaxError, ValueError) as e:
+                print(f"Fehler beim Verarbeiten von document_id {document_id} mit dem response: {response}: {e}")
+                continue
 
+            #search for the date of the document, this is needed for structuring the data in the later pickle files
+            date = self.__get_date_of_document(document_id, company_name)
             data.append({
                 "document_id": document_id,
                 "date": date,
@@ -182,9 +185,23 @@ class OpenAIBatchService:
             })
 
         df = pd.DataFrame(data, columns=["document_id", "date", "short_term_sentiment", "long_term_sentiment"])
-        print(df)
-        min_date = df["date"].min().date()
-        max_date = df["date"].max().date()
-        pickle_filename = f"{min_date}_to_{max_date}.pkl"
-        print("test")
+        #date needs to be formatted so min and max can be determined -> however we want to see h,m,s of the timestamp in the dataframe
+        df['date'] = pd.to_datetime(df['date'])
+        df['date'] = df['date'].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        min_date = df["date"].min().split(" ")[0]
+        max_date = df["date"].max().split(" ")[0]
+        pickle_filename = f"data/sentiments/{company_name}/{min_date}_to_{max_date}.pkl"
         df.to_pickle(pickle_filename)
+
+    def __get_date_of_document(self, document_id, company_name):
+        file_path = f"data/news/{company_name}/{company_name}_sorted.csv"
+        with open(file_path, 'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                uuid = row[0]
+                if uuid == document_id:
+                    date_str = row[1]
+
+        date = datetime.strptime(date_str, "%d %b %Y %H:%M:%S %Z")
+        return date
