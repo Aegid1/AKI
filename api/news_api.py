@@ -1,4 +1,5 @@
 import re
+import time
 import uuid
 import pandas as pd
 from fastapi import APIRouter, Depends
@@ -19,7 +20,7 @@ def get_articles_from_news_api(request: NewsApiRequest, news_api_service: NewsSe
         Returns:
             list: A list of articles from the News API.
         """
-    articles = news_api_service.get_articles(request.company_name, request.page_number, request.start_date,
+    articles = news_api_service.get_articles(request.company_name, request.up_to_page_number, request.start_date,
                                              request.end_date).get("news")
     return articles
 
@@ -37,7 +38,7 @@ def store_articles_from_news_api(request: NewsApiRequest,
         Returns:
             None
         """
-    articles = news_service.get_articles(request.company_name, request.page_number, request.start_date,
+    articles = news_service.get_articles(request.company_name, request.up_to_page_number, request.start_date,
                                              request.end_date).get("news")
     articles_list = []
     for article in articles:
@@ -51,61 +52,53 @@ def store_articles_from_news_api(request: NewsApiRequest,
     articles_sorted.to_csv(f"data/news/{request.company_name}/{request.company_name}_sorted.csv", index=False, header=False)
 
 
-@router.post("/articles/news/relevant_topics/all")
+@router.post("/articles/news/all")
 def store_all_relevant_articles_from_news_api(request: NewsApiRequest, news_api_service: NewsService = Depends()):
-    requested_pages = request.page_number
+    start_time = time.time()
+
+    requested_pages = request.up_to_page_number
     articles_list = []
     current_page = 1
-    topic = f"{request.company_name} Unternehmen"
-    response = news_api_service.get_articles(topic, current_page, request.start_date, request.end_date)
-    articles = response.get("news")
 
-    while response.get("count") != 0:
-        print("PAGE: " + str(current_page))
-        for article in articles:
-            content = article.get("text")
-            content = re.sub(r'\s+', ' ', content).strip() #news texts contain unnecessary newlines
+    days = news_api_service.get_open_days(request.start_date, request.end_date)
 
-            article_is_relevant = news_api_service.check_if_article_is_relevant(topic, content, 0.3, request.company_name) #sometimes articles are not relevant -> sort those out
-            if not article_is_relevant: continue
+    if request.is_company_given:
+        topic = f"{request.company_name} Unternehmen" #in case of company news, if this is added more precise results are given
+    else:
+        topic = request.company_name
 
-            date = article.get("date")
-            converted_date = pd.to_datetime(date, format='%a, %d %b %Y %H:%M:%S %Z')
-            articles_list.append((str(uuid.uuid4()), converted_date, content))
-
-        current_page += 1
-        if current_page == requested_pages:
-            break
-        response = news_api_service.get_articles(f"{request.company_name} Unternehmen", current_page, request.start_date, request.end_date)
+    for i in range(len(days)-1):
+        response = news_api_service.get_articles(topic, current_page, days[i], days[i+1])
         articles = response.get("news")
+        while response.get("count") != 0:
+            print("PAGE: " + str(current_page))
+            for article in articles:
+                content = article.get("text")
+                content = re.sub(r'\s+', ' ', content).strip() #news texts contain unnecessary newlines
+
+                #threshold of 3.5 is used, this was the result of several tests leading to more relevant articles
+                article_is_relevant = news_api_service.check_if_article_is_relevant(topic, content, 3.5, request.company_name) #sometimes articles are not relevant -> sort those out
+                if not article_is_relevant: continue
+
+                date = article.get("date")
+                # hier noch das actual date checken mit gdelt api
+
+                converted_date = pd.to_datetime(date, format='%a, %d %b %Y %H:%M:%S %Z')
+                articles_list.append((str(uuid.uuid4()), converted_date, content))
+
+            current_page += 1
+            if current_page > requested_pages: break
+            response = news_api_service.get_articles(topic, current_page, request.start_date, request.end_date)
+            articles = response.get("news")
+        i+=2
 
     articles_df = pd.DataFrame(articles_list, columns=['UUID', 'Date', 'Text'])
     articles_sorted = articles_df.sort_values(by='Date')
-    print(articles_sorted)
     articles_sorted.to_csv(f"data/news/{request.company_name}/{request.company_name}_sorted.csv", index=False, header=False)
 
-
-@router.post("/articles/economy_news/all")
-def store_all_relevant_economy_articles_from_news_api(news_api_service: NewsService = Depends()):
-    articles_list = []
-    #pick out all the relevant days and iterate through them
-    response = news_api_service.get_economy_news(1, "01/11/2024", "02/11/2024")
-    articles = response.get("news")
-
-    for article in articles:
-        content = article.get("text")
-        content = re.sub(r'\s+', ' ', content).strip() #news texts contain unnecessary newlines
-        article_is_relevant = news_api_service.check_if_article_is_relevant("Wirtschaft", content, 0.78, "Wirtschaft")  # sometimes articles are not relevant -> sort those out
-        if not article_is_relevant: continue
-
-        date = article.get("date")
-        converted_date = pd.to_datetime(date, format='%a, %d %b %Y %H:%M:%S %Z')
-        articles_list.append((str(uuid.uuid4()), converted_date, content))
-
-    articles_df = pd.DataFrame(articles_list, columns=['UUID', 'Date', 'Text'])
-    articles_sorted = articles_df.sort_values(by='Date')
-    print(articles_sorted)
-    articles_sorted.to_csv(f"data/news/top_economy_news_sorted.csv", index=False, header=False)
+    end_time = time.time()
+    duration = end_time - start_time
+    print(f"Die Funktion hat {duration:.2f} Sekunden gebraucht.")
 
 
 # @router.post("/articles/news/topics/{company_name}")

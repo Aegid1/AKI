@@ -1,5 +1,5 @@
 import csv
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 import numpy as np
 import requests
@@ -129,16 +129,22 @@ class NewsService:
             similarity = cosine_similarity(embedding_topic, embedding_content)[0][0]
             length_topic = len(topic.split())
             length_content = len(content.split())
-            length_factor = np.log(1 + max(length_topic, length_content))  # Beispiel für logarithmische Gewichtung
+            length_factor = self.determine_length_factor(length_topic, length_content)
 
             adjusted_similarity = similarity * length_factor
-
             similarities.append(adjusted_similarity)
             print(f"Ähnlichkeit für Keyword '{keyword}': {similarity}")
 
         avg_similarity = sum(similarities) / len(similarities)
         print(f"{content[:50]}: {avg_similarity}")
         return avg_similarity >= threshold
+
+    def determine_length_factor(self, length_topic, length_content):
+        max_length_factor = 6
+        raw_length_factor = np.log(1 + max(length_topic, length_content))
+        length_factor = min(raw_length_factor, max_length_factor)  # Limit the length factor
+        # the limit results in accepting articles with a minimum average cosine similarity of 0.58333
+        return length_factor
 
 
     def load_keywords_from_csv(self, csv_file):
@@ -151,25 +157,38 @@ class NewsService:
         return keywords
 
 
-    def get_open_days_2023(self, year):
-        start_date = date(year, 1, 1)
-        end_date = date(year, 12, 31)
-        # Feiertage 2023 in Deutschland, an denen die Börse geschlossen ist
+    def get_open_days(self, start_date_str, end_date_str):
+        start_date = datetime.strptime(start_date_str, "%d/%m/%Y").date()
+        end_date = datetime.strptime(end_date_str, "%d/%m/%Y").date()
+
         holidays = [
-            date(year, 1, 1),  # Neujahrstag
-            date(year, 4, 7),  # Karfreitag
-            date(year, 4, 10),  # Ostermontag
-            date(year, 5, 1),  # Tag der Arbeit
-            date(year, 5, 18),  # Christi Himmelfahrt
-            date(year, 5, 29),  # Pfingstmontag
-            date(year, 10, 3),  # Tag der Deutschen Einheit
-            date(year, 12, 25),  # Erster Weihnachtstag
-            date(year, 12, 26)  # Zweiter Weihnachtstag
+            date(start_date.year, 1, 1),  # Neujahrstag
+            date(start_date.year, 4, 7),  # Karfreitag
+            date(start_date.year, 4, 10),  # Ostermontag
+            date(start_date.year, 5, 1),  # Tag der Arbeit
+            date(start_date.year, 5, 18),  # Christi Himmelfahrt
+            date(start_date.year, 5, 29),  # Pfingstmontag
+            date(start_date.year, 10, 3),  # Tag der Deutschen Einheit
+            date(start_date.year, 12, 25),  # Erster Weihnachtstag
+            date(start_date.year, 12, 26)  # Zweiter Weihnachtstag
         ]
+
+        if start_date.year != end_date.year:
+            holidays.extend([
+                date(end_date.year, 1, 1),
+                date(end_date.year, 4, 7),
+                date(end_date.year, 4, 10),
+                date(end_date.year, 5, 1),
+                date(end_date.year, 5, 18),
+                date(end_date.year, 5, 29),
+                date(end_date.year, 10, 3),
+                date(end_date.year, 12, 25),
+                date(end_date.year, 12, 26)
+            ])
+
         open_days = []
         current_date = start_date
         while current_date <= end_date:
-
             if current_date.weekday() < 5 and current_date not in holidays:
                 open_days.append(current_date.strftime("%d/%m/%Y"))
             current_date += timedelta(days=1)
