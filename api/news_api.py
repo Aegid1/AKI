@@ -1,6 +1,7 @@
 import re
 import time
 import uuid
+
 import pandas as pd
 from fastapi import APIRouter, Depends
 from basemodel.NewsApiRequest import NewsApiRequest
@@ -58,41 +59,44 @@ def store_all_relevant_articles_from_news_api(request: NewsApiRequest, news_api_
 
     requested_pages = request.up_to_page_number
     articles_list = []
-    current_page = 1
-
     days = news_api_service.get_open_days(request.start_date, request.end_date)
-
     if request.is_company_given:
         topic = f"{request.company_name} Unternehmen" #in case of company news, if this is added more precise results are given
     else:
         topic = request.company_name
 
     for i in range(len(days)-1):
+        print(f"DAY: {days[i]} to {days[i+1]}")
+        current_page = 1
         response = news_api_service.get_articles(topic, current_page, days[i], days[i+1])
-        articles = response.get("news")
+
         while response.get("count") != 0:
+            articles = response.get("news")
             print("PAGE: " + str(current_page))
             for article in articles:
                 content = article.get("text")
                 content = re.sub(r'\s+', ' ', content).strip() #news texts contain unnecessary newlines
 
-                #threshold of 3.5 is used, this was the result of several tests leading to more relevant articles
-                article_is_relevant = news_api_service.check_if_article_is_relevant(topic, content, 3.5, request.company_name) #sometimes articles are not relevant -> sort those out
+                #threshold of 3.3 is used, this was the result of several tests leading to more relevant articles
+                article_is_relevant = news_api_service.check_if_article_is_relevant(topic, content, 3.3, request.company_name) #sometimes articles are not relevant -> sort those out
                 if not article_is_relevant: continue
 
                 date = article.get("date")
-                # hier noch das actual date checken mit gdelt api
+                if "08:00:00 GMT" in date: #the used news api sometimes doesn't provide the actual date and uses 08:00:00 GMT as a placeholder
+                    date = news_api_service.get_actual_date_of_article(article.get("url"), date)
 
                 converted_date = pd.to_datetime(date, format='%a, %d %b %Y %H:%M:%S %Z')
                 articles_list.append((str(uuid.uuid4()), converted_date, content))
 
             current_page += 1
             if current_page > requested_pages: break
-            response = news_api_service.get_articles(topic, current_page, request.start_date, request.end_date)
-            articles = response.get("news")
+            time.sleep(5)
+            response = news_api_service.get_articles(topic, current_page, days[i], days[i+1])
+
         i+=2
 
     articles_df = pd.DataFrame(articles_list, columns=['UUID', 'Date', 'Text'])
+    articles_df = articles_df.drop_duplicates(subset='Text')
     articles_sorted = articles_df.sort_values(by='Date')
     articles_sorted.to_csv(f"data/news/{request.company_name}/{request.company_name}_sorted.csv", index=False, header=False)
 

@@ -1,12 +1,15 @@
 import csv
+import re
 from datetime import date, timedelta, datetime
 
 import numpy as np
+import pytz
 import requests
 import yaml
 from openai import OpenAI
 from transformers import AutoTokenizer, AutoModel
 from sklearn.metrics.pairwise import cosine_similarity
+from bs4 import BeautifulSoup
 
 class NewsService:
 
@@ -41,28 +44,6 @@ class NewsService:
         #maybe test with variable amount of pages
         payload = {
             "query": topic,
-            "time_bounded": True,
-            "from_date": start_date,
-            "to_date": end_date,
-            "location": "de",
-            "language": "de",
-            "page": page_number
-        }
-        response = requests.post(url, json=payload, headers=headers)
-        return response.json()
-
-
-    def get_economy_news(self, page_number: int, start_date: str, end_date: str):
-        url = "https://newsnow.p.rapidapi.com/newsv2"
-        headers = {
-            "x-rapidapi-key": self.config["KEYS"]["rapid-api"],
-            "x-rapidapi-host": "newsnow.p.rapidapi.com",
-            "Content-Type": "application/json"
-        }
-
-        #maybe test with variable amount of pages
-        payload = {
-            "query": "Wirtschaft",
             "time_bounded": True,
             "from_date": start_date,
             "to_date": end_date,
@@ -139,11 +120,19 @@ class NewsService:
         print(f"{content[:50]}: {avg_similarity}")
         return avg_similarity >= threshold
 
+
+    def get_embedding(self, text, tokenizer, model):
+        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+        outputs = model(**inputs)
+        embeddings = outputs.last_hidden_state.mean(dim=1).detach().numpy()
+        return embeddings
+
+
     def determine_length_factor(self, length_topic, length_content):
         max_length_factor = 6
         raw_length_factor = np.log(1 + max(length_topic, length_content))
         length_factor = min(raw_length_factor, max_length_factor)  # Limit the length factor
-        # the limit results in accepting articles with a minimum average cosine similarity of 0.58333
+        # the limit results in accepting articles with a minimum average cosine similarity of 0.55
         return length_factor
 
 
@@ -152,7 +141,7 @@ class NewsService:
         with open(csv_file, newline='', encoding='utf-8') as csvfile:
             reader = csv.reader(csvfile)
             for row in reader:
-                if row:  # Falls die Zeile nicht leer ist
+                if row:
                     keywords.append(row[0])
         return keywords
 
@@ -196,13 +185,6 @@ class NewsService:
         return open_days
 
 
-    def get_embedding(self, text, tokenizer, model):
-        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
-        outputs = model(**inputs)
-        embeddings = outputs.last_hidden_state.mean(dim=1).detach().numpy()
-        return embeddings
-
-
     # def __extract_relevant_results(self, result:str):
     #     branches = re.search(r'Branchen:\s*\((.*?)\)', result)
     #     competitors = re.search(r'Wettbewerber:\s*\((.*?)\)', result)
@@ -211,3 +193,43 @@ class NewsService:
     #     competitors_values = competitors.group(1).strip() if competitors else ""
     #
     #     return branches_values, competitors_values
+
+    def get_actual_date_of_article(self, url:str, placeholder_date:str):
+        response = requests.get(url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        date = None
+
+        # try to extract the date from <meta> tag
+        meta_date = soup.find('meta', {'property': 'article:published_time'})
+        if meta_date:
+            date = meta_date.get('content')
+
+        if not date:
+            meta_date_fallback = soup.find('meta', {'name': 'date'}) or soup.find('meta', {'property': 'datePublished'})
+            if meta_date_fallback:
+                date = meta_date_fallback.get('content')
+
+        #try to extract the date from <time> tag
+        if not date:
+            time_tag = soup.find('time')
+            if time_tag:
+                date = time_tag.get('datetime')
+
+        if not date:
+            text = soup.get_text()
+            date_match = re.search(r'\b(\d{2}\.\d{2}\.\d{4})\b', text)  # search for a date of the format 'DD.MM.YYYY'
+            if date_match:
+                date = date_match.group(0)
+
+        if not date:
+            date = placeholder_date
+
+        try:
+            date_obj = datetime.fromisoformat(date)
+            # transform in UTC, if necessary
+            date_utc = date_obj.astimezone(pytz.UTC)
+            formatted_date = date_utc.strftime("%a, %d %b %Y %H:%M:%S GMT")
+            return formatted_date
+        except ValueError:
+            return date
+
