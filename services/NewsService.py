@@ -16,8 +16,6 @@ class NewsService:
     config = yaml.safe_load(open("openai_config.yaml"))
     client = OpenAI(api_key=config['KEYS']['openai'])
 
-    # tokenizer = AutoTokenizer.from_pretrained('yiyanghkust/finbert-pretrain')
-    # model = AutoModel.from_pretrained('yiyanghkust/finbert-pretrain')
     tokenizer = AutoTokenizer.from_pretrained('bert-base-german-cased')
     model = AutoModel.from_pretrained('bert-base-german-cased')
 
@@ -99,26 +97,29 @@ class NewsService:
 
     def check_if_article_is_relevant(self, topic: str, content: str, threshold: float, keyword: str):
         if keyword.lower() not in content.lower(): return False #check whether the content contains the topic
-        keywords = self.load_keywords_from_csv("data/embedding_comparison_keywords.csv")
+        return True
+        #TODO the cosine similarity check is currently not used, due to the deadline of the project -> use later on
 
-        similarities = []
-
-        for keyword in keywords:
-            embedding_topic = self.get_embedding(f"{topic} {keyword}", self.tokenizer, self.model)
-            embedding_content = self.get_embedding(content, self.tokenizer, self.model)
-
-            similarity = cosine_similarity(embedding_topic, embedding_content)[0][0]
-            length_topic = len(topic.split())
-            length_content = len(content.split())
-            length_factor = self.determine_length_factor(length_topic, length_content)
-
-            adjusted_similarity = similarity * length_factor
-            similarities.append(adjusted_similarity)
-            print(f"Ähnlichkeit für Keyword '{keyword}': {similarity}")
-
-        avg_similarity = sum(similarities) / len(similarities)
-        print(f"{content[:50]}: {avg_similarity}")
-        return avg_similarity >= threshold
+        # keywords = self.load_keywords_from_csv("data/embedding_comparison_keywords.csv")
+        #
+        # similarities = []
+        #
+        # for keyword in keywords:
+        #     embedding_topic = self.get_embedding(f"{topic} {keyword}", self.tokenizer, self.model)
+        #     embedding_content = self.get_embedding(content, self.tokenizer, self.model)
+        #
+        #     similarity = cosine_similarity(embedding_topic, embedding_content)[0][0]
+        #     length_topic = len(topic.split())
+        #     length_content = len(content.split())
+        #     length_factor = self.determine_length_factor(length_topic, length_content)
+        #
+        #     adjusted_similarity = similarity * length_factor
+        #     similarities.append(adjusted_similarity)
+        #     print(f"Ähnlichkeit für Keyword '{keyword}': {similarity}")
+        #
+        # avg_similarity = sum(similarities) / len(similarities)
+        # print(f"{content[:50]}: {avg_similarity}")
+        # return avg_similarity >= threshold
 
 
     def get_embedding(self, text, tokenizer, model):
@@ -217,12 +218,16 @@ class NewsService:
 
         if not date:
             text = soup.get_text()
-            date_match = re.search(r'\b(\d{2}\.\d{2}\.\d{4})\b', text)  # search for a date of the format 'DD.MM.YYYY'
-            if date_match:
-                date = date_match.group(0)
+            time_match = re.search(r'\b(\d{2}:\d{2}(?::\d{2})?)\b', text)  #searches in text for time format 'HH:MM' oder 'HH:MM:SS'
+            if time_match:
+                time = time_match.group(0)
+                placeholder_date_obj = datetime.fromisoformat(placeholder_date)
+                placeholder_date_iso = placeholder_date_obj.strftime("%Y-%m-%d")
+                date = f"{placeholder_date_iso} {time}"  # Format: 'YYYY-MM-DD HH:MM[:SS]'
 
-        if not date:
-            date = placeholder_date
+        if not date or not re.search(r'\d{2}:\d{2}(:\d{2})?', date):
+            #date = placeholder_date
+            raise ValueError("No timestamp found")
 
         try:
             date_obj = datetime.fromisoformat(date)

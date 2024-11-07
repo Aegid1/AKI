@@ -82,15 +82,17 @@ def store_all_relevant_articles_from_news_api(request: NewsApiRequest, news_api_
                 if not article_is_relevant: continue
 
                 date = article.get("date")
-                if "08:00:00 GMT" in date: #the used news api sometimes doesn't provide the actual date and uses 08:00:00 GMT as a placeholder
-                    date = news_api_service.get_actual_date_of_article(article.get("url"), date)
+
+                try:
+                    if "08:00:00" in date or "07:00:00" in date: #the used news api sometimes doesn't provide the actual date and uses 08:00:00 or 07:00:00 as a placeholder
+                        date = news_api_service.get_actual_date_of_article(article.get("url"), date)
+                except ValueError: continue
 
                 converted_date = pd.to_datetime(date, format='%a, %d %b %Y %H:%M:%S %Z')
                 articles_list.append((str(uuid.uuid4()), converted_date, content))
 
             current_page += 1
             if current_page > requested_pages: break
-            time.sleep(5)
             response = news_api_service.get_articles(topic, current_page, days[i], days[i+1])
 
         i+=2
