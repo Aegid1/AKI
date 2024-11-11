@@ -3,12 +3,12 @@ import re
 from datetime import date, timedelta, datetime
 
 import numpy as np
+import pandas as pd
 import pytz
 import requests
 import yaml
 from openai import OpenAI
 from transformers import AutoTokenizer, AutoModel
-from sklearn.metrics.pairwise import cosine_similarity
 from bs4 import BeautifulSoup
 
 class NewsService:
@@ -195,9 +195,14 @@ class NewsService:
     #
     #     return branches_values, competitors_values
 
+
     def get_actual_date_of_article(self, url:str, placeholder_date:str):
-        response = requests.get(url)
-        soup = BeautifulSoup(response.content, 'html.parser')
+        try:
+            response = requests.get(url)
+            soup = BeautifulSoup(response.content, 'html.parser')
+        except Exception as e:
+            raise ValueError("No timestamp found")
+
         date = None
 
         # try to extract the date from <meta> tag
@@ -238,3 +243,14 @@ class NewsService:
         except ValueError:
             return date
 
+
+    def merge_articles(self, company_name:str, month:str, year:str):
+        df1 = pd.read_csv(f"data/news/Wirtschaft/Wirtschaft_sorted_{month}_{year}.csv", header=None, names=["ID", "Datum", "Text"])
+        df2 = pd.read_csv(f"data/news/{company_name}/{company_name}_sorted_{month}_{year}.csv", header=None, names=["ID", "Datum", "Text"])
+
+        merged_df = pd.concat([df1, df2], ignore_index=True)
+
+        merged_df['Datum'] = pd.to_datetime(merged_df['Datum'], errors='coerce')
+        merged_df = merged_df.sort_values(by='Datum').reset_index(drop=True)
+
+        merged_df.to_csv(f"data/news/{company_name}/{company_name}_merged_{month}_{year}.csv", index=False, header=False)

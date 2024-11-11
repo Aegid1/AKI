@@ -22,11 +22,12 @@ class OpenAIBatchService:
                     prompt (str): the prompt that will be sent to the batch-api
         """
         prompt = (
-                "Think step by step. Analyze the sentiment of the following economic news article about the mentioned company "
-                "based on its short-term and long-term impact on the stock price of the mentioned company."
+                f"Think step by step. Analyze the sentiment of the following economic news article about {company_name}"
+                f"based on its short-term and long-term impact on the stock price of {company_name}."
                 "Rate each on a scale from -10 to +10, where -10 indicates a very negative impact, 0 indicates a neutral impact, "
-                "and +10 indicates a very positive impact. "
-                "Respond only with a tuple in the format ([short-term sentiment], [long-term sentiment]).\n\n"
+                f"and +10 indicates a very positive impact. Figure out which relevancy the article has to the stock price of {company_name}"
+                "and determine a relevancy_factor between 1 and 0. 1 indicates a high relevancy and 0 indicates a low relevancy."
+                "Respond only with a triple in the format ([short-term sentiment], [long-term sentiment], [relevancy_factor]).\n\n"
                 "Article:\n" + text
         )
         request = {
@@ -170,7 +171,7 @@ class OpenAIBatchService:
 
             #get the determined long-term and short-term sentiment of the result
             try:
-                short_term_sentiment, long_term_sentiment = eval(response)
+                short_term_sentiment, long_term_sentiment, relevancy = eval(response)
             except (SyntaxError, ValueError) as e:
                 print(f"Fehler beim Verarbeiten von document_id {document_id} mit dem response: {response}: {e}")
                 continue
@@ -181,7 +182,8 @@ class OpenAIBatchService:
                 "document_id": document_id,
                 "date": date,
                 "short_term_sentiment": short_term_sentiment,
-                "long_term_sentiment": long_term_sentiment
+                "long_term_sentiment": long_term_sentiment,
+                "relevancy_factor": relevancy
             })
 
         df = pd.DataFrame(data, columns=["document_id", "date", "short_term_sentiment", "long_term_sentiment"])
@@ -189,19 +191,22 @@ class OpenAIBatchService:
         df['date'] = pd.to_datetime(df['date'])
         df['date'] = df['date'].dt.strftime("%Y-%m-%d %H:%M:%S")
 
-        min_date = df["date"].min().split(" ")[0]
-        max_date = df["date"].max().split(" ")[0]
+        min_date = df["date"].min()
+        max_date = df["date"].max()
         pickle_filename = f"data/sentiments_news/{company_name}/{min_date}_to_{max_date}.pkl"
         df.to_pickle(pickle_filename)
 
     def __get_date_of_document(self, document_id, company_name):
-        file_path = f"data/news/{company_name}/{company_name}_sorted.csv"
-        with open(file_path, 'r') as file:
-            reader = csv.reader(file)
-            for row in reader:
-                uuid = row[0]
-                if uuid == document_id:
-                    date_str = row[1]
+        directory = f"data/news/{company_name}/"
+        for filename in os.listdir(directory):
+            if filename.endswith(".csv") and "merged" in filename:
+                file_path = os.path.join(directory, filename)
+                with open(file_path, 'r') as file:
+                    reader = csv.reader(file)
+                    for row in reader:
+                        uuid = row[0]
+                        if uuid == "e704db97-2ceb-4b3b-a7d8-5b36eb3243cf":
+                            date_str = row[1]
 
-        date = datetime.strptime(date_str, "%d %b %Y %H:%M:%S %Z")
-        return date
+                            date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S%z")
+                            return date

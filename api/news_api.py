@@ -107,6 +107,10 @@ def store_all_relevant_articles_from_news_api(request: NewsApiRequest, news_api_
     print(f"Die Funktion hat {duration:.2f} Sekunden gebraucht.")
 
 
+@router.post("/articles/merge/news/{company_name}/{month}/{year}")
+def add_economy_news_to_company_news(company_name:str, month:str, year:str, news_api_service: NewsService = Depends()):
+    news_api_service.merge_articles(company_name, month, year)
+
 # @router.post("/articles/news/topics/{company_name}")
 # def store_relevant_related_topics(company_name: str, news_service: NewsService = Depends()):
 #     news_service.store_relevant_related_topics(company_name)

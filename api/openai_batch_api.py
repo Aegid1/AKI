@@ -1,6 +1,9 @@
 import os
+from datetime import datetime
+
 from fastapi import APIRouter, Depends
 from basemodel.BatchMetadata import BatchMetadata
+from embeddings_test import company_name
 from services.OpenAIBatchService import OpenAIBatchService
 
 router = APIRouter()
@@ -9,23 +12,30 @@ router = APIRouter()
 def create_batch(batch_metadata: BatchMetadata, batch_api_service: OpenAIBatchService = Depends()):
     #hier durch alle files in dem gegebenen Ordner data/news/[company_name] durchgehen und durch jede zeile in jedem file iterieren
     folder_path = "data/news/" + batch_metadata.company_name
-    file_count_in_batch=1
     count_of_batches=1
+    current_year, current_week = None, None  # Variable zum Tracken der aktuellen Woche
+
     for filename in os.listdir(folder_path):
+        if not "merged" in filename: continue
         file_path = os.path.join(folder_path, filename)
         with open(file_path, "r") as file:
             for line in file:
-                #wenn batch_size erreicht, dann muss anderer batch_namen verwendet werden, 50 is recommended
-                if file_count_in_batch > batch_metadata.batch_size:
-                    count_of_batches+=1
-
                 document_id, date, text=line.split(",", 2)
+
+                date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S%z")
+                year, week, _ = date.isocalendar()
+
+                if current_year != year or current_week != week:
+                    current_year, current_week = year, week
+                    count_of_batches += 1  # Neuer Batch
+
                 #der name der batch file kann bspw. später so aussehen: batch_Siemens_1.jsonl, batch_Siemens_2.jsonl, batch_SAP_1.jsonl
+                batch_filename = f"batch_{batch_metadata.company_name}_{current_year}_W{current_week}.jsonl"
+                #TODO das hier in eine neue Funktion packen
                 batch_api_service.create_one_prompt_for_batch(document_id,
                                                               text,
-                                                              "batch_" + batch_metadata.company_name + "_" +str(count_of_batches) + ".jsonl",
+                                                              batch_filename,
                                                               batch_metadata.company_name)
-                file_count_in_batch+=1
 
 @router.post("/batch/{company_name}")
 def send_batch(company_name: str, batch_api_service: OpenAIBatchService = Depends()):

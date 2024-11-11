@@ -17,7 +17,7 @@ app.add_middleware(
 
 app.include_router(openai_router, prefix="/api/v1")
 app.include_router(news_router, prefix="/api/v1")
-app.include_router(twitter_router, prefix="api/v1")
+app.include_router(twitter_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":
