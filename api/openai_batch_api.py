@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+from click.core import batch
 from fastapi import APIRouter, Depends
 from basemodel.BatchMetadata import BatchMetadata
 from embeddings_test import company_name
@@ -18,7 +19,7 @@ def create_batch(batch_metadata: BatchMetadata, batch_api_service: OpenAIBatchSe
     for filename in os.listdir(folder_path):
         if not "merged" in filename: continue
         file_path = os.path.join(folder_path, filename)
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             for line in file:
                 document_id, date, text=line.split(",", 2)
 
@@ -51,9 +52,12 @@ def send_batch(company_name: str, batch_api_service: OpenAIBatchService = Depend
     """
     #iterate through all batches of a given company and send them to openai
     folder_path = "data/batches/" + company_name
+    batch_id = None
     for filename in os.listdir(folder_path):
+        if batch_id: batch_api_service.check_batch_status(batch_id)
+
         file_path = os.path.join(folder_path, filename)
-        batch_api_service.send_batch(file_path, company_name)
+        batch_id = batch_api_service.send_batch(file_path, company_name)
 
 @router.get("/batch/retrieval/{company_name}")
 def retrieve_all_batches(company_name:str, batch_api_service: OpenAIBatchService = Depends()):
