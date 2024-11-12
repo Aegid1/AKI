@@ -3,6 +3,7 @@ import time
 import uuid
 
 import pandas as pd
+from dateutil.parser import parser
 from fastapi import APIRouter, Depends
 from basemodel.NewsApiRequest import NewsApiRequest
 from services.NewsService import NewsService
@@ -73,23 +74,26 @@ def store_all_relevant_articles_from_news_api(request: NewsApiRequest, news_api_
         while response.get("count") != 0:
             articles = response.get("news")
             print("PAGE: " + str(current_page))
-            for article in articles:
-                content = article.get("text")
-                content = re.sub(r'\s+', ' ', content).strip() #news texts contain unnecessary newlines
+            if articles:
+                for article in articles:
+                    content = article.get("text")
+                    content = re.sub(r'\s+', ' ', content).strip() #news texts contain unnecessary newlines
 
-                #threshold of 3.3 is used, this was the result of several tests leading to more relevant articles
-                article_is_relevant = news_api_service.check_if_article_is_relevant(topic, content, 3.3, request.company_name) #sometimes articles are not relevant -> sort those out
-                if not article_is_relevant: continue
+                    #threshold of 3.3 is used, this was the result of several tests leading to more relevant articles
+                    article_is_relevant = news_api_service.check_if_article_is_relevant(topic, content, 3.3, request.company_name) #sometimes articles are not relevant -> sort those out
+                    if not article_is_relevant: continue
 
-                date = article.get("date")
+                    date = article.get("date")
 
-                try:
-                    if "08:00:00" in date or "07:00:00" in date: #the used news api sometimes doesn't provide the actual date and uses 08:00:00 or 07:00:00 as a placeholder
-                        date = news_api_service.get_actual_date_of_article(article.get("url"), date)
-                except ValueError: continue
+                    try:
+                        if "08:00:00" in date or "07:00:00" in date: #the used news api sometimes doesn't provide the actual date and uses 08:00:00 or 07:00:00 as a placeholder
+                            date = news_api_service.get_actual_date_of_article(article.get("url"), date)
 
-                converted_date = pd.to_datetime(date, format='%a, %d %b %Y %H:%M:%S %Z')
-                articles_list.append((str(uuid.uuid4()), converted_date, content))
+                        converted_date = pd.to_datetime(date, format='%a, %d %b %Y %H:%M:%S %Z')
+
+                    except Exception: continue
+
+                    articles_list.append((str(uuid.uuid4()), converted_date, content))
 
             current_page += 1
             if current_page > requested_pages: break

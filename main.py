@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.openai_batch_api import router as openai_router
 from api.news_api import router as news_router
 from api.twitter_api import router as twitter_router
+from api.stocks_api import router as stocks_router
 
 app = FastAPI()
 
@@ -15,6 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(stocks_router, prefix="/api/v1")
 app.include_router(openai_router, prefix="/api/v1")
 app.include_router(news_router, prefix="/api/v1")
 app.include_router(twitter_router, prefix="/api/v1")
