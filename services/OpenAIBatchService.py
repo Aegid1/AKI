@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import time
 from datetime import datetime
 import pandas as pd
 import yaml
@@ -27,7 +28,8 @@ class OpenAIBatchService:
                 "Rate each on a scale from -10 to +10, where -10 indicates a very negative impact, 0 indicates a neutral impact, "
                 f"and +10 indicates a very positive impact. Figure out which relevancy the article has to the stock price of {company_name}"
                 "and determine a relevancy_factor between 1 and 0. 1 indicates a high relevancy and 0 indicates a low relevancy."
-                "Respond only with a triple in the format ([short-term sentiment], [long-term sentiment], [relevancy_factor]).\n\n"
+                "Respond only with a triple in the format ([short-term sentiment], [long-term sentiment], [relevancy_factor]). "
+                "For example: (9, 2, 0.85)\n\n"
                 "Article:\n" + text
         )
         request = {
@@ -108,7 +110,17 @@ class OpenAIBatchService:
                 Returns:
                     str: The status of the batch.
         """
-        batch = self.client.batches.retrieve(batch_id)
+        batch_status = self.client.batches.retrieve(batch_id).status
+        epoch = 0
+        while batch_status != "completed":
+            print("EPOCH: " + str(epoch))
+            print(batch_status)
+            time.sleep(10)
+            batch_status = self.client.batches.retrieve(batch_id).status
+            epoch += 1
+        return None
+
+
         return batch.status
 
     def delete_batch_ids_file(self, batch_name):

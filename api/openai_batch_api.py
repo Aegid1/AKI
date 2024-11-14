@@ -3,7 +3,6 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends
 from basemodel.BatchMetadata import BatchMetadata
-from embeddings_test import company_name
 from services.OpenAIBatchService import OpenAIBatchService
 
 router = APIRouter()
@@ -51,9 +50,18 @@ def send_batch(company_name: str, batch_api_service: OpenAIBatchService = Depend
     """
     #iterate through all batches of a given company and send them to openai
     folder_path = "data/batches/" + company_name
+    batch_id = None
     for filename in os.listdir(folder_path):
+        if batch_id: batch_api_service.check_batch_status(batch_id)
+
         file_path = os.path.join(folder_path, filename)
-        batch_api_service.send_batch(file_path, company_name)
+        batch_id = batch_api_service.send_batch(file_path, company_name)
+
+        try:
+            os.remove(file_path)
+            print(f"deleting file {file_path}")
+        except Exception as e:
+            print(f"Error deleting file {file_path}: {e}")
 
 @router.get("/batch/retrieval/{company_name}")
 def retrieve_all_batches(company_name:str, batch_api_service: OpenAIBatchService = Depends()):
