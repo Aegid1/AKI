@@ -141,7 +141,7 @@ def start_training_no_normalization():
     train_loss_vals = list()
     test_loss_vals = list()
 
-    for epoch in range(2):
+    for epoch in range(100):
         print(f"EPOCH: {epoch}")
         running_training_loss = 0
         running_test_loss = 0

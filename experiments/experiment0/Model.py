@@ -22,9 +22,9 @@ class Model(nn.Module):
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
 
-    def forward(self, Stock_price):
-        Stock_price_tilde, Stock_price_tilde_hidden = self.Stock_price_layer(Stock_price.unsqueeze(2))
-        out = Stock_price_tilde[:, -1, :]
+    def forward(self, stock_price):
+        stock_price_tilde, stock_price_tilde_hidden = self.Stock_price_layer(stock_price.unsqueeze(2))
+        out = stock_price_tilde[:, -1, :]
         out = self.DNN_Layer(out)
         out = self.DNN_Layer2(out)
         output = torch.relu(out)
