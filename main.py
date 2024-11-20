@@ -6,7 +6,7 @@ from api.news_api import router as news_router
 from api.twitter_api import router as twitter_router
 from api.stocks_api import router as stocks_router
 from api.macro_factors_api import router as macro_factors_router
-
+from api.model_api import router as model_router
 app = FastAPI()
 
 app.add_middleware(
@@ -22,6 +22,7 @@ app.include_router(openai_router, prefix="/api/v1")
 app.include_router(news_router, prefix="/api/v1")
 app.include_router(twitter_router, prefix="/api/v1")
 app.include_router(macro_factors_router, prefix="/api/v1")
+app.include_router(model_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

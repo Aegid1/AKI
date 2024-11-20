@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import experiments.Experiment1.network_layers_sentiments as milstm
+import experiments.experiment1.network_layers_sentiments as milstm
 
 class Net(nn.Module):
 
