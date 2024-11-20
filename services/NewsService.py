@@ -7,6 +7,7 @@ import pandas as pd
 import pytz
 import requests
 import yaml
+from dateutil.relativedelta import relativedelta
 from openai import OpenAI
 from transformers import AutoTokenizer, AutoModel
 from bs4 import BeautifulSoup
@@ -254,3 +255,16 @@ class NewsService:
         merged_df = merged_df.sort_values(by='Datum').reset_index(drop=True)
 
         merged_df.to_csv(f"data/news/{company_name}/{company_name}_merged_{month}_{year}.csv", index=False, header=False)
+
+    def create_monthly_intervals(self, start_date: str, end_date: str):
+        start_date = datetime.strptime(start_date, "%d/%m/%Y")
+        end_date = datetime.strptime(end_date, "%d/%m/%Y")
+
+        dates = []
+        current_start = end_date
+        while current_start > start_date:
+            current_end = current_start
+            current_start = current_start - relativedelta(months=1)
+            dates.append((current_start.strftime("%d/%m/%Y"), current_end.strftime("%d/%m/%Y")))
+
+        return dates

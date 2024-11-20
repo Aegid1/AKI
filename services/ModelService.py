@@ -3,7 +3,7 @@ import torch
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 
-from experiments.experiment0.Experiment0 import Model
+from experiments.experiment0.experiment0 import Model
 
 class ModelService:
 

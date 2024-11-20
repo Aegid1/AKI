@@ -10,7 +10,8 @@ class StocksDataSet(Dataset):
 
     def __init__(self, seq_size):
         self.seq_size = seq_size
-        self.paths = os.listdir('../../data/Samples/experiment0')
+        path = os.path.join('..', '..', 'data', 'Samples', 'experiment0')
+        self.paths = os.listdir(path)
         self.paths = [p for p in self.paths if p.endswith('.pkl')]
         random.shuffle(self.paths)
 
@@ -18,7 +19,8 @@ class StocksDataSet(Dataset):
         return len(self.paths)
 
     def __getitem__(self, idx):
-        with open('../../data/Samples/experiment0/' + self.paths[idx], 'rb') as f:
+        path = os.path.join('..', '..', 'data', 'Samples', 'experiment0')
+        with open(os.path.join(path, self.paths[idx]), 'rb') as f:
             item = pickle.load(f)
 
         features = np.array(item['features']).reshape(-1, 1)

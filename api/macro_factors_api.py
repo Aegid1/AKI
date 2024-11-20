@@ -1,9 +1,4 @@
-import re
-import time
-import uuid
 
-import pandas as pd
-from dateutil.parser import parser
 from fastapi import APIRouter, Depends
 from services.MacroFactorsService import MacroFactorsService
 
