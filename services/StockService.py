@@ -38,7 +38,7 @@ class StockService:
 
 
     def create_stock_pickle_files(self, experiment:str):
-        company_names = ["Airbus", "Allianz", "Deutsche Telekom", "Mercedes-Benz", "Merck", "Porsche", "SAP", "Siemens", "Siemens Healthineers", "Münchener Rückversicherungs-Gesellschaft"]
+        company_names = ["Airbus", "Allianz", "Deutsche Telekom", "Mercedes-Benz", "Volkswagen", "Porsche", "SAP", "Siemens", "Siemens Healthineers", "Adidas"]
         input_dir = '/data/stocks/'
         output_dir = f'/data/Samples/{experiment}/'
 

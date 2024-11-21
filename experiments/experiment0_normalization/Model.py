@@ -23,7 +23,7 @@ class Model(nn.Module):
             weight.data.uniform_(-stdv, stdv)
 
     def forward(self, stock_price):
-        stock_price_tilde, stock_price_tilde_hidden = self.Stock_price_layer(stock_price.unsqueeze(2))
+        stock_price_tilde, stock_price_tilde_hidden = self.Stock_price_layer(stock_price)
         out = stock_price_tilde[:, -1, :]
         out = self.DNN_Layer(out)
         out = self.DNN_Layer2(out)
