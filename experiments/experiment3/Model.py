@@ -39,7 +39,14 @@ class Model(nn.Module):
         currency_rate_tilde, currency_rate_hidden = self.Currency_layer(currency_rate)
         milstm_tilde, milst_hidden = self.MI_LSTM_layer(oil_price_hidden, currency_rate_hidden)
         stock_price_out = stock_price_tilde[:, -1, :]
-        attention_out = self.Attention_layer(stock_price_out, milstm_tilde, interest_rate, gdp, inflation_rate, unemployment_rate)
+        attention_out = self.Attention_layer(
+            stock_tilde= stock_price_out,
+            milstm_tilde= milstm_tilde,
+            interest_rate= interest_rate,
+            gdp= gdp,
+            inflation_rate= inflation_rate,
+            unemployment_rate= unemployment_rate
+        )
         out = self.DNN_Layer(attention_out)
         output = torch.relu(out)
         return output

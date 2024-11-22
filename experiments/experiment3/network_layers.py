@@ -134,9 +134,9 @@ class Attention(nn.Module):
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
 
-    def forward(self, Stock_tilde, MILSTM_tilde, interest_rate, gdp, inflation, unemployment):
+    def forward(self, stock_tilde, milstm_tilde, interest_rate, gdp, inflation, unemployment):
 
-        input_vector = torch.tensor([Stock_tilde, MILSTM_tilde, interest_rate, gdp, inflation, unemployment], dtype=torch.float32)
+        input_vector = torch.tensor([stock_tilde, milstm_tilde, interest_rate, gdp, inflation, unemployment], dtype=torch.float32)
 
         temp = input_vector @ self.W_b
         j_t = torch.tanh(temp + self.b_b)

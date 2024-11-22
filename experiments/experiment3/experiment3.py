@@ -1,18 +1,16 @@
 import time
 
-import numpy as np
 import torch
 import torch.nn as nn
 from matplotlib.lines import Line2D
-from sklearn.preprocessing import MinMaxScaler
 from torch import optim
 from torch.utils.data import random_split, DataLoader
-from Datasets.StocksDataSet import StocksDataSet
+from Datasets.MacroFactorsDataSet import StocksDataSet
 import matplotlib.pyplot as plt
 
-from experiments.experiment0.Model import Model
+from experiments.experiment3.Model import Model
 
-def start_training_normalization():
+def start_training():
     start_time = time.time()
 
     stocks_seq_size = 25
@@ -22,7 +20,7 @@ def start_training_normalization():
     input_size = 1
     hidden_size = 200
 
-    dataset = StocksDataSet(stocks_seq_size)
+    dataset = StocksDataSet(stocks_seq_size,oil_seq_size, currency_seq_size)
 
     train_size = int(0.8 * len(dataset))
     test_size = len(dataset) - train_size
@@ -31,10 +29,10 @@ def start_training_normalization():
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size)
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size)
 
-    net = Model(input_size, hidden_size)
+    model = Model(input_size, hidden_size)
 
     criterion = nn.MSELoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     train_loss_vals = list()
     test_loss_vals = list()
 
@@ -45,29 +43,18 @@ def start_training_normalization():
 
         for inputs, labels in train_loader:
             optimizer.zero_grad()
-            labels = labels.unsqueeze(1) #necessary in order to have the same dimension as inputs
+            labels = labels.unsqueeze(1)
 
-            #normalize the inputs and the label
-            combined_data = np.concatenate((inputs.numpy(), labels.numpy()), axis=1)
-            scaler = MinMaxScaler()
-            combined_data_scaled = scaler.fit_transform(combined_data)
-            inputs_scaled = combined_data_scaled[:, :-1]
-            labels_scaled = combined_data_scaled[:, -1]
-
-            inputs_tensor = torch.tensor(inputs_scaled, dtype=torch.float32)
-            labels_tensor = torch.tensor(labels_scaled, dtype=torch.float32)
-
-            outputs = net.forward(
-                inputs_tensor["stock_price"],
-                inputs_tensor["oil_price"],
-                inputs_tensor["currency_rate"],
-                inputs_tensor["interest_rate"],
-                inputs_tensor["gdp"],
-                inputs_tensor["unemployment_rate"],
-                inputs_tensor["inflaction_rate"]
-
+add            outputs = model.forward(
+                stock_price= inputs["stock_prices"].unsqueeze(-1),
+                oil_price= inputs["oil_prices"].unsqueeze(-1),
+                currency_rate= inputs["currency_rates"].unsqueeze(-1),
+                interest_rate= inputs["interest_rates"].unsqueeze(-1),
+                gdp= inputs["gdp"].unsqueeze(-1),
+                unemployment_rate= inputs["unemployment_rate"].unsqueeze(-1),
+                inflation_rate= inputs["inflation"].unsqueeze(-1)
             )
-            loss = criterion(torch.squeeze(outputs), labels_tensor)
+            loss = criterion(torch.squeeze(outputs), labels)
             loss.backward()
             optimizer.step()
             running_training_loss += loss.item()
@@ -75,18 +62,16 @@ def start_training_normalization():
         torch.set_grad_enabled(False)
         for inputs, labels in test_loader:
             labels = labels.unsqueeze(1)
-            #normalize test values
-            combined_data = np.concatenate((inputs.numpy(), labels.numpy()), axis=1)
-            scaler = MinMaxScaler()
-            combined_data_scaled = scaler.fit_transform(combined_data)
-
-            inputs_scaled = combined_data_scaled[:, :-1]
-            labels_scaled = combined_data_scaled[:, -1]
-            inputs_tensor = torch.tensor(inputs_scaled, dtype=torch.float32)
-            labels_tensor = torch.tensor(labels_scaled, dtype=torch.float32)
-
-            outputs = net.forward(inputs_tensor)
-            loss = criterion(torch.squeeze(outputs), labels_tensor)
+            outputs = model.forward(
+                stock_price=inputs["stock_prices"].unsqueeze(-1),
+                oil_price=inputs["oil_prices"].unsqueeze(-1),
+                currency_rate=inputs["currency_rates"].unsqueeze(-1),
+                interest_rate=inputs["interest_rates"].unsqueeze(-1),
+                gdp=inputs["gdp"].unsqueeze(-1),
+                unemployment_rate=inputs["unemployment_rate"].unsqueeze(-1),
+                inflation_rate=inputs["inflation"].unsqueeze(-1)
+            )
+            loss = criterion(torch.squeeze(outputs), labels)
             running_test_loss += loss.item()
 
         train_loss_vals.append(running_training_loss/len(train_loader))
@@ -112,7 +97,7 @@ def start_training_normalization():
     end_time = time.time()
     duration = end_time - start_time
     print(f"Das Training hat {duration:.2f} Sekunden gebraucht.")
-    torch.save(net.state_dict(), "trained_model_experiment0.pth")
+    torch.save(model.state_dict(), "trained_model_experiment0.pth")
 
     plt.savefig("training_loss_plot.png", format='png', dpi=300)
     plt.show()
@@ -123,7 +108,7 @@ def start_training_normalization():
     print(f"FIRST TEST LOSS: {test_loss_vals[0]}")
     print(f"FINAL TEST LOSS: {test_loss_vals[-1]}")
 
-#start_training_normalization()
+start_training()
 
 
 

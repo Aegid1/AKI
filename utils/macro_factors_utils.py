@@ -1,10 +1,7 @@
 import os
 import pickle
-
 import numpy as np
 import pandas as pd
-from IPython.display import display
-
 
 def get_last_n_valid_values(series, n=5):
     unique_values = series.dropna().drop_duplicates().values
@@ -39,28 +36,28 @@ def synchronize_data(base_times, oil_prices, currency_rates, gdp, inflation, int
 
 
 def create_macro_factors_samples():
-    company_names = ["Airbus", "Allianz", "Deutsche Telekom", "Mercedes-Benz", "Volkswagen", "Porsche", "SAP",
-                     "Siemens", "Siemens Healthineers", "Adidas"]
-    input_dir_stocks = '../data/stocks/'
-    output_dir = '../data/Samples/experiment3/'
+    company_names = ["Airbus", "Allianz", "Deutsche Telekom", "Mercedes-Benz", "Volkswagen", "Porsche", "SAP", "Siemens", "Siemens Healthineers", "Deutsche Bank"]
+    input_dir_stocks = os.path.join('..', 'data', 'stocks')
+    output_dir = os.path.join('..', 'data', 'Samples', 'experiment3')
     os.makedirs(output_dir, exist_ok=True)
 
-    oil_prices = pd.read_csv('../data/macro_factors/oil.csv', parse_dates=['Date'])
+    base_dir = '../data/macro_factors'
+    oil_prices = pd.read_csv(os.path.join(base_dir, 'oil.csv'), parse_dates=['Date'])
     oil_prices['Date'] = oil_prices['Date'].dt.tz_localize(None)
 
-    currency_rates = pd.read_csv('../data/macro_factors/currency_euro_dollar.csv', parse_dates=['Date'])
+    currency_rates = pd.read_csv(os.path.join(base_dir, 'currency_euro_dollar.csv'), parse_dates=['Date'])
     currency_rates['Date'] = currency_rates['Date'].dt.tz_localize(None)
 
-    gdp = pd.read_csv('../data/macro_factors/gdp.csv', parse_dates=['Date'])
+    gdp = pd.read_csv(os.path.join(base_dir, 'gdp.csv'), parse_dates=['Date'])
     gdp['Date'] = gdp['Date'].dt.tz_localize(None)
 
-    inflation = pd.read_csv('../data/macro_factors/inflation_rate.csv', parse_dates=['Date'])
+    inflation = pd.read_csv(os.path.join(base_dir, 'inflation_rate.csv'), parse_dates=['Date'])
     inflation['Date'] = inflation['Date'].dt.tz_localize(None)
 
-    interest = pd.read_csv('../data/macro_factors/central_interest_rate.csv', parse_dates=['Date'])
+    interest = pd.read_csv(os.path.join(base_dir, 'central_interest_rate.csv'), parse_dates=['Date'])
     interest['Date'] = interest['Date'].dt.tz_localize(None)
 
-    unemployment_rate = pd.read_csv('../data/macro_factors/unemployment_rate.csv', parse_dates=['Date'])
+    unemployment_rate = pd.read_csv(os.path.join(base_dir, 'unemployment_rate.csv'), parse_dates=['Date'])
     unemployment_rate['Date'] = unemployment_rate['Date'].dt.tz_localize(None)
 
     for company in company_names:
@@ -78,13 +75,13 @@ def create_macro_factors_samples():
 
         for i in range(0, len(all_data), 25):
             if i + 25 <= len(all_data):
-                sample = all_data.iloc[i:i + 25]
+                sample = all_data.iloc[i:i + 26]
                 stock_features = sample['Open'][:-1].values
                 stock_target = sample['Open'].iloc[-1]
                 datetime_start = sample['Datetime'].iloc[0]
 
                 # Sicherstellen, dass Datetime korrekt ist
-                base_times = pd.to_datetime(sample['Datetime'])  # Konvertiere zu datetime64
+                base_times = pd.to_datetime(sample['Datetime'])
                 oil_features, currency_features, gdp_features, inflation_features, interest_features, unemployment_features = synchronize_data(base_times, oil_prices, currency_rates, gdp, inflation, interest, unemployment_rate)
 
                 # Sample speichern
