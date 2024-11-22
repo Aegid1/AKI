@@ -12,6 +12,7 @@ class StocksDataSet(Dataset):
         path = os.path.join('..', '..', 'data', 'Samples', 'experiment3')
         self.paths = os.listdir(path)
         self.paths = [p for p in self.paths if p.endswith('.pkl')]
+        print(len(self.paths))
         random.shuffle(self.paths)
 
         self.stocks_seq_size = stocks_seq_size
@@ -53,9 +54,14 @@ class StocksDataSet(Dataset):
         currency_rates = item["features"]["currency_rates"]
 
         #normalization of sequential data
-        stock_prices_normalized = self.sequence_scalers["stock_prices"].fit_transform(
-            np.array(stock_prices).reshape(-1, 1)
+        target = item["target"]
+        stock_prices_with_target = np.append(stock_prices, target)  # Combine stock prices and target
+        stock_prices_normalized_with_target = self.sequence_scalers["stock_prices"].fit_transform(
+            stock_prices_with_target.reshape(-1, 1)
         ).flatten()
+
+        stock_prices_normalized = stock_prices_normalized_with_target[:-1]  # All except the last value
+        target_normalized = stock_prices_normalized_with_target[-1]
 
         oil_prices_normalized = self.sequence_scalers["oil_prices"].fit_transform(
             np.array(oil_prices).reshape(-1, 1)
@@ -72,8 +78,6 @@ class StocksDataSet(Dataset):
             for key in scalars_to_normalize
         }
 
-        target = item["target"]
-
         features = {
             "stock_prices": torch.tensor(stock_prices_normalized, dtype=torch.float32),
             "oil_prices": torch.tensor(oil_prices_normalized, dtype=torch.float32),
@@ -84,24 +88,4 @@ class StocksDataSet(Dataset):
             },
         }
 
-        return features, torch.tensor(target, dtype=torch.float32)
-
-        # features = np.array(item['features']).reshape(-1, 1)
-        # target = np.array(item['target']).reshape(-1, 1)
-        # combined = np.vstack((features, target))
-        #
-        # scaler = MinMaxScaler()
-        # combined_scaled = scaler.fit_transform(combined)
-        #
-        # features_scaled = combined_scaled[:-1].flatten()
-        # target_scaled = combined_scaled[-1].flatten()
-        # features_tensor = torch.tensor(features_scaled, dtype=torch.float32)
-        # target_tensor = torch.tensor(target_scaled, dtype=torch.float32)
-        # target_tensor = target_tensor.squeeze()
-        #
-        # if len(features_tensor) < self.seq_size:
-        #     features_tensor = torch.cat((torch.zeros(self.seq_size - len(features_tensor)), features_tensor))
-        # else:
-        #     features_tensor = features_tensor[-self.seq_size:]
-        #
-        # return features_tensor, target_tensor
+        return features, torch.tensor(target_normalized, dtype=torch.float32)

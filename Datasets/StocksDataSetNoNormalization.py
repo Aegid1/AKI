@@ -13,6 +13,7 @@ class StocksDataSet(Dataset):
         path = os.path.join('..', '..', 'data', 'Samples', 'experiment0')
         self.paths = os.listdir(path)
         self.paths = [p for p in self.paths if p.endswith('.pkl')]
+        print(len(self.paths))
         random.shuffle(self.paths)
 
     def __len__(self):

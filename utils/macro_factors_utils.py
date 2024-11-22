@@ -73,18 +73,16 @@ def create_macro_factors_samples():
         all_data.sort_values(by='Datetime', inplace=True)
         all_data.reset_index(drop=True, inplace=True)
 
-        for i in range(0, len(all_data), 25):
+        for i in range(len(all_data) - 25):
             if i + 25 <= len(all_data):
                 sample = all_data.iloc[i:i + 26]
                 stock_features = sample['Open'][:-1].values
                 stock_target = sample['Open'].iloc[-1]
                 datetime_start = sample['Datetime'].iloc[0]
 
-                # Sicherstellen, dass Datetime korrekt ist
                 base_times = pd.to_datetime(sample['Datetime'])
                 oil_features, currency_features, gdp_features, inflation_features, interest_features, unemployment_features = synchronize_data(base_times, oil_prices, currency_rates, gdp, inflation, interest, unemployment_rate)
 
-                # Sample speichern
                 item = {
                     'features': {
                         'stock_prices': stock_features,

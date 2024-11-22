@@ -7,7 +7,7 @@ from matplotlib.lines import Line2D
 from sklearn.preprocessing import MinMaxScaler
 from torch import optim
 from torch.utils.data import random_split, DataLoader
-from Datasets.StocksDataSet import StocksDataSet
+from Datasets.StocksDataSetNoNormalization import StocksDataSet
 import matplotlib.pyplot as plt
 
 from experiments.experiment0_normalization.Model import Model
@@ -124,4 +124,4 @@ def start_training_normalization():
     print(f"FIRST TEST LOSS: {test_loss_vals[0]}")
     print(f"FINAL TEST LOSS: {test_loss_vals[-1]}")
 
-#start_training_normalization()
+start_training_normalization()

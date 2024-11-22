@@ -66,14 +66,13 @@ class MultiInputLSTMMacroFactors(nn.Module):
         torch.nn.init.zeros_(self.b_c_n)
 
     def forward(self, O, C):
-
-        bs, seq_sz, _ = O.size()
+        bs, seq_sz, _ = O.shape
         hidden_seq = []
+        #initialize start with zeros
         h_t, c_t = (
             torch.zeros(bs, self.hidden_size).to(O.device),
             torch.zeros(bs, self.hidden_size).to(O.device),
         )
-
         for t in range(seq_sz):
             P_t = O[:, t, :]
             N_t = C[:, t, :]
@@ -125,7 +124,7 @@ class Attention(nn.Module):
         # i_t
         self.W_b = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
         self.b_b = nn.Parameter(torch.Tensor(hidden_sz))
-        self.v_b = nn.Parameter(torch.Tensor(hidden_sz))
+        self.v_b = nn.Parameter(torch.Tensor(input_sz, hidden_sz)) #we use here the sa
 
         self.init_weights()
 
@@ -135,14 +134,13 @@ class Attention(nn.Module):
             weight.data.uniform_(-stdv, stdv)
 
     def forward(self, stock_tilde, milstm_tilde, interest_rate, gdp, inflation, unemployment):
-
-        input_vector = torch.tensor([stock_tilde, milstm_tilde, interest_rate, gdp, inflation, unemployment], dtype=torch.float32)
-
+        input_vector = torch.stack([stock_tilde, milstm_tilde, interest_rate, gdp, inflation, unemployment], dim=1)
         temp = input_vector @ self.W_b
+
         j_t = torch.tanh(temp + self.b_b)
         j_t = j_t @ self.v_b.t()
-
         beta = torch.softmax(j_t, dim=0)
+        #print(beta)
         y_tilde = beta * input_vector
         return y_tilde.squeeze()
 

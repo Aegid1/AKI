@@ -18,7 +18,7 @@ def start_training():
     currency_seq_size = 5
     batch_size = 50
     input_size = 1
-    hidden_size = 200
+    hidden_size = 400
 
     dataset = StocksDataSet(stocks_seq_size,oil_seq_size, currency_seq_size)
 
@@ -45,16 +45,16 @@ def start_training():
             optimizer.zero_grad()
             labels = labels.unsqueeze(1)
 
-add            outputs = model.forward(
+            outputs = model.forward(
                 stock_price= inputs["stock_prices"].unsqueeze(-1),
                 oil_price= inputs["oil_prices"].unsqueeze(-1),
                 currency_rate= inputs["currency_rates"].unsqueeze(-1),
-                interest_rate= inputs["interest_rates"].unsqueeze(-1),
-                gdp= inputs["gdp"].unsqueeze(-1),
-                unemployment_rate= inputs["unemployment_rate"].unsqueeze(-1),
-                inflation_rate= inputs["inflation"].unsqueeze(-1)
+                interest_rate= inputs["interest_rates"],
+                gdp= inputs["gdp"],
+                unemployment_rate= inputs["unemployment_rate"],
+                inflation_rate= inputs["inflation"]
             )
-            loss = criterion(torch.squeeze(outputs), labels)
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
             running_training_loss += loss.item()
@@ -62,18 +62,21 @@ add            outputs = model.forward(
         torch.set_grad_enabled(False)
         for inputs, labels in test_loader:
             labels = labels.unsqueeze(1)
+
             outputs = model.forward(
                 stock_price=inputs["stock_prices"].unsqueeze(-1),
                 oil_price=inputs["oil_prices"].unsqueeze(-1),
                 currency_rate=inputs["currency_rates"].unsqueeze(-1),
-                interest_rate=inputs["interest_rates"].unsqueeze(-1),
-                gdp=inputs["gdp"].unsqueeze(-1),
-                unemployment_rate=inputs["unemployment_rate"].unsqueeze(-1),
-                inflation_rate=inputs["inflation"].unsqueeze(-1)
+                interest_rate=inputs["interest_rates"],
+                gdp=inputs["gdp"],
+                unemployment_rate=inputs["unemployment_rate"],
+                inflation_rate=inputs["inflation"]
             )
-            loss = criterion(torch.squeeze(outputs), labels)
-            running_test_loss += loss.item()
 
+            loss = criterion(outputs, labels)
+            running_test_loss += loss.item()
+        print(running_training_loss/len(train_loader))
+        print(running_test_loss/len(test_loader))
         train_loss_vals.append(running_training_loss/len(train_loader))
         test_loss_vals.append(running_test_loss/len(test_loader))
         torch.set_grad_enabled(True)
