@@ -246,14 +246,24 @@ class NewsService:
 
 
     def merge_articles(self, company_name:str, month:str, year:str):
+
         df1 = pd.read_csv(f"data/news/Wirtschaft/Wirtschaft_sorted_{month}_{year}.csv", header=None, names=["ID", "Datum", "Text"])
         df2 = pd.read_csv(f"data/news/{company_name}/{company_name}_sorted_{month}_{year}.csv", header=None, names=["ID", "Datum", "Text"])
 
         merged_df = pd.concat([df1, df2], ignore_index=True)
 
         merged_df['Datum'] = pd.to_datetime(merged_df['Datum'], errors='coerce')
-        merged_df = merged_df.sort_values(by='Datum').reset_index(drop=True)
+        merged_df['Datum'] = merged_df['Datum'].dt.tz_localize(None)
 
+        #delete all articles that are not relevant to the given time period
+        start_date = pd.Timestamp(year=int(year), month=int(month), day=1)
+        if start_date.month == 12:  # December -> January as end date
+            end_date = pd.Timestamp(year=start_date.year + 1, month=1, day=1) - pd.Timedelta(days=1)
+        else:  # any other month
+            end_date = pd.Timestamp(year=start_date.year, month=start_date.month + 1, day=1) - pd.Timedelta(days=1)
+        merged_df = merged_df[(merged_df['Datum'] >= start_date) & (merged_df['Datum'] <= end_date)]
+
+        merged_df = merged_df.sort_values(by='Datum').reset_index(drop=True)
         merged_df.to_csv(f"data/news/{company_name}/{company_name}_merged_{month}_{year}.csv", index=False, header=False)
 
     def create_monthly_intervals(self, start_date: str, end_date: str):

@@ -35,7 +35,6 @@ def start_training_normalization():
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
     train_loss_vals = list()
     test_loss_vals = list()
-
     for epoch in range(100):
         print(f"EPOCH: {epoch}")
         running_training_loss = 0
@@ -124,4 +123,4 @@ def start_training_normalization():
     print(f"FIRST TEST LOSS: {test_loss_vals[0]}")
     print(f"FINAL TEST LOSS: {test_loss_vals[-1]}")
 
-start_training_normalization()
+#start_training_normalization()

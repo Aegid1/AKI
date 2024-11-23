@@ -170,8 +170,8 @@ class OpenAIBatchService:
                 Returns:
                     None
         """
-        with open("data/batches/" + company_name + "/" + file_name, 'a') as file:
-            json_str = json.dumps(request)
+        json_str = json.dumps(request, ensure_ascii=False)
+        with open("data/batches/" + company_name + "/" + file_name, 'a',  encoding='utf-8') as file:
             file.write(json_str + '\n')
 
     def __save_batch_results_in_pickle_file(self, results, company_name:str):

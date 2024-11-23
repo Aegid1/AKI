@@ -17,11 +17,11 @@ def create_batch(batch_metadata: BatchMetadata, batch_api_service: OpenAIBatchSe
     for filename in os.listdir(folder_path):
         if not "merged" in filename: continue
         file_path = os.path.join(folder_path, filename)
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             for line in file:
                 document_id, date, text=line.split(",", 2)
 
-                date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S%z")
+                date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
                 year, week, _ = date.isocalendar()
 
                 if current_year != year or current_week != week:

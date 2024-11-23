@@ -22,7 +22,7 @@ def create_test_data_stock_pickle_file():
     #final_data = final_data.sort_values(by='Datetime')
     #final_data = final_data.reset_index(drop=True)
 
-    save_path = f"data/Samples/TestSamples/bmw_test_data.csv"
+    save_path = f"../data/Samples/TestSamples/bmw_test_data.csv"
 
     final_data.to_csv(save_path, index=False)
     print(f"Gespeichert: {save_path}")

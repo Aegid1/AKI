@@ -73,7 +73,7 @@ def create_macro_factors_samples():
         all_data.sort_values(by='Datetime', inplace=True)
         all_data.reset_index(drop=True, inplace=True)
 
-        for i in range(len(all_data) - 25):
+        for i in range(0, len(all_data), 25):
             if i + 25 <= len(all_data):
                 sample = all_data.iloc[i:i + 26]
                 stock_features = sample['Open'][:-1].values

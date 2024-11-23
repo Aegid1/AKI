@@ -12,13 +12,12 @@ from experiments.experiment3.Model import Model
 
 def start_training():
     start_time = time.time()
-
     stocks_seq_size = 25
     oil_seq_size = 5
     currency_seq_size = 5
     batch_size = 50
     input_size = 1
-    hidden_size = 400
+    hidden_size = 200
 
     dataset = StocksDataSet(stocks_seq_size,oil_seq_size, currency_seq_size)
 
@@ -44,7 +43,6 @@ def start_training():
         for inputs, labels in train_loader:
             optimizer.zero_grad()
             labels = labels.unsqueeze(1)
-
             outputs = model.forward(
                 stock_price= inputs["stock_prices"].unsqueeze(-1),
                 oil_price= inputs["oil_prices"].unsqueeze(-1),
@@ -62,7 +60,6 @@ def start_training():
         torch.set_grad_enabled(False)
         for inputs, labels in test_loader:
             labels = labels.unsqueeze(1)
-
             outputs = model.forward(
                 stock_price=inputs["stock_prices"].unsqueeze(-1),
                 oil_price=inputs["oil_prices"].unsqueeze(-1),
@@ -111,7 +108,7 @@ def start_training():
     print(f"FIRST TEST LOSS: {test_loss_vals[0]}")
     print(f"FINAL TEST LOSS: {test_loss_vals[-1]}")
 
-start_training()
+#start_training()
 
 
 

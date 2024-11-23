@@ -6,7 +6,7 @@ from matplotlib.lines import Line2D
 from torch import nn, optim
 from torch.utils.data import random_split, DataLoader
 
-from Datasets.StocksDataSetNoNormalization import StocksDataSet
+from Datasets.StocksDataSetNormalization import StocksDataSet
 from experiments.experiment0_normalization.Model import Model
 
 
@@ -30,7 +30,7 @@ def start_training_no_normalization():
     net = Model(input_size, hidden_size)
 
     criterion = nn.MSELoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9) #learning rate is adjusted from 0.001 to 0.0001 - otherwise gradient explosion
+    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9) #learning rate is adjusted from 0.001 to 0.0001 - otherwise gradient explosion
     train_loss_vals = list()
     test_loss_vals = list()
 
@@ -41,17 +41,16 @@ def start_training_no_normalization():
 
         for inputs, labels in train_loader:
             optimizer.zero_grad()
-            outputs = net.forward(inputs)
-            loss = criterion(outputs, labels.squeeze(-1))
+            outputs = net.forward(inputs.unsqueeze(2))
+            loss = criterion(outputs, labels.unsqueeze(-1))
             loss.backward()
             optimizer.step()
             running_training_loss += loss.item()
 
         torch.set_grad_enabled(False)
         for inputs, labels in test_loader:
-
-            outputs = net.forward(inputs)
-            loss = criterion(outputs, labels.squeeze(-1))
+            outputs = net.forward(inputs.unsqueeze(2))
+            loss = criterion(outputs, labels.unsqueeze(-1))
             running_test_loss += loss.item()
 
         print(running_training_loss/len(train_loader))
@@ -62,7 +61,6 @@ def start_training_no_normalization():
 
     plt.plot(range(100), train_loss_vals, color='blue', label='Training Loss')
     plt.plot(range(100), test_loss_vals, color='orange', label='Test Loss')
-
     final_train_loss = f"Final Train Loss: {train_loss_vals[-1]:.4f}"
     final_test_loss = f"Final Test Loss: {test_loss_vals[-1]:.4f}"
 
@@ -86,4 +84,4 @@ def start_training_no_normalization():
     plt.savefig("training_loss_plot.png", format='png', dpi=300)
     plt.show()
 
-#start_training_no_normalization
+#start_training_no_normalization()

@@ -10,7 +10,7 @@ class StocksDataSet(Dataset):
 
     def __init__(self, seq_size):
         self.seq_size = seq_size
-        path = os.path.join('..', '..', 'data', 'Samples', 'experiment0')
+        path = os.path.join('..', '..', 'data', 'Samples', 'experiment0_2')
         self.paths = os.listdir(path)
         self.paths = [p for p in self.paths if p.endswith('.pkl')]
         print(len(self.paths))
@@ -20,7 +20,7 @@ class StocksDataSet(Dataset):
         return len(self.paths)
 
     def __getitem__(self, idx):
-        path = os.path.join('..', '..', 'data', 'Samples', 'experiment0')
+        path = os.path.join('..', '..', 'data', 'Samples', 'experiment0_2')
         with open(os.path.join(path, self.paths[idx]), 'rb') as f:
             item = pickle.load(f)
 
@@ -30,7 +30,7 @@ class StocksDataSet(Dataset):
         target_tensor = torch.tensor(target, dtype=torch.float32)
 
         if len(features_tensor) < self.seq_size:
-            features_tensor = torch.cat((torch.zeros(self.seq_size - len(features_tensor)), features_tensor))
+            features_tensor = torch.cat((torch.zeros(self.seq_size - len(features_tensor)).unsqueeze(-1), features_tensor))
         else:
             features_tensor = features_tensor[-self.seq_size:]
 
