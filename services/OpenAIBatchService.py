@@ -32,7 +32,8 @@ class OpenAIBatchService:
                 f"and +10 indicates a very positive impact. Figure out which relevancy the article has to the stock price of {company_name}"
                 "and determine a relevancy_factor between 1 and 0. 1 indicates a high relevancy and 0 indicates a low relevancy."
                 "Respond only with a triple in the format ([short-term sentiment], [long-term sentiment], [relevancy_factor]). "
-                "For example: (9, 2, 0.85)\n\n"
+                "Example Output1: (9, 2, 0.85)\n\n"
+                "Example Output2: (-7, -3, 0.7)\n\n"
                 "Article:\n" + text
         )
         request = {
@@ -94,16 +95,19 @@ class OpenAIBatchService:
 
         """
         batch = self.client.batches.retrieve(batch_id)
+        input_file_name = self.__get_input_file_name_from_batch(batch)
+        print(input_file_name)
+
         if batch.status != "completed":
             return "Your batch is currently not ready and in the state: " + batch.status
 
         output_file = self.client.files.content(batch.output_file_id)
-
         content = output_file.content
         content_str = content.decode('utf-8')
         lines = content_str.splitlines()
         result_list = [json.loads(line) for line in lines]
         self.__save_batch_results_in_csv_file(result_list, company_name)
+        self.__delete_batch_file(input_file_name, company_name)
 
     def check_batch_status(self, batch_id: str):
         """
@@ -187,8 +191,18 @@ class OpenAIBatchService:
 
             # Get the determined long-term and short-term sentiment of the result
             try:
-                short_term_sentiment, long_term_sentiment, relevancy = eval(response)
-            except (SyntaxError, ValueError) as e:
+                open_brackets = response.count("(")
+                close_brackets = response.count(")")
+                if open_brackets + close_brackets != 2:
+                    response = response.replace(")", "")
+                    response = response.replace("(", "")
+                    response = response.replace("[", "")
+                    response = response.replace("]", "")
+                    response_splitted = response.split(",")
+                    short_term_sentiment, long_term_sentiment, relevancy = response_splitted[0], response_splitted[1], response_splitted[2]
+                else:
+                    short_term_sentiment, long_term_sentiment, relevancy = eval(response)
+            except (SyntaxError, ValueError, IndexError) as e:
                 print(f"Fehler beim Verarbeiten von document_id {document_id} mit dem response: {response}: {e}")
                 continue
 
@@ -222,6 +236,19 @@ class OpenAIBatchService:
             return text[:char_limit]
         return text
 
+
+    def __delete_batch_file(self, filename: str, company_name:str):
+        file_path = os.path.join("data", "batches", f"{company_name}", f"{filename}")
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"Die Datei {file_path} wurde gelöscht.")
+            else:
+                print(f"Die Datei {file_path} existiert nicht.")
+        except Exception as e:
+            print(f"Fehler beim Löschen der Datei {file_path}: {e}")
+
+
     def __get_date_of_document(self, document_id, company_name):
         directory = f"data/news/{company_name}/"
         for filename in os.listdir(directory):
@@ -236,6 +263,20 @@ class OpenAIBatchService:
 
                             date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
                             return date
+
+
+    def __get_input_file_name_from_batch(self, batch):
+
+        input_file_id = batch.input_file_id
+        input_file = self.client.files.retrieve(input_file_id)
+        input_file_name = input_file.filename
+
+        if input_file_name:
+            return input_file_name
+        else:
+            print("Der Name der Input-Datei konnte nicht gefunden werden.")
+            return None
+
 
     def __count_tokens(self, text, model="gpt-4"):
         """

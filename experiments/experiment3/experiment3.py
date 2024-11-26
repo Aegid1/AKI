@@ -5,7 +5,7 @@ import torch.nn as nn
 from matplotlib.lines import Line2D
 from torch import optim
 from torch.utils.data import random_split, DataLoader
-from Datasets.MacroFactorsDataSetNormalizationStocksDifferentNormalization import StocksDataSet #TODO maybe use other DataSet afterwards
+from Datasets.MacroFactorsDataSetV2 import StocksDataSet
 import matplotlib.pyplot as plt
 
 from experiments.experiment3.Model import Model
