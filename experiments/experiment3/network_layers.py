@@ -124,7 +124,7 @@ class Attention(nn.Module):
         # i_t
         self.W_b = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
         self.b_b = nn.Parameter(torch.Tensor(hidden_sz))
-        self.v_b = nn.Parameter(torch.Tensor(input_sz, hidden_sz)) #we use here the sa
+        self.v_b = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
 
         self.init_weights()
 
@@ -143,54 +143,3 @@ class Attention(nn.Module):
         #print(beta)
         y_tilde = beta * input_vector
         return y_tilde.squeeze()
-
-
-class CustomLSTM(nn.Module):
-    def __init__(self, input_sz: int, hidden_sz: int):
-        super().__init__()
-        self.input_size = input_sz
-        self.hidden_size = hidden_sz
-
-        self.U_f = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_i = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_c = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_o = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-
-        self.W_f = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.W_i = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.W_c = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.W_o = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-
-        self.b_i = nn.Parameter(torch.Tensor(hidden_sz))
-        self.b_f = nn.Parameter(torch.Tensor(hidden_sz))
-        self.b_c = nn.Parameter(torch.Tensor(hidden_sz))
-        self.b_o = nn.Parameter(torch.Tensor(hidden_sz))
-
-        self.init_weights()
-
-    def init_weights(self):
-        stdv = 1.0 / math.sqrt(self.hidden_size)
-        for weight in self.parameters():
-            weight.data.uniform_(-stdv, stdv)
-
-    def forward(self, x):
-        bs, seq_sz, _ = x.shape  #assumes x.shape represents (batch_size, sequence_size, input_size)
-        hidden_seq = []
-        h_t = torch.zeros(bs, self.hidden_size)  #initialize states für den ersten step, da wir hier noch keinen vorherigen Schritt haben
-        c_t = torch.zeros(bs, self.hidden_size)
-
-        for t in range(seq_sz):
-            x_t = x[:, t, :]
-
-            f_t = torch.sigmoid(x_t @ self.U_f + h_t @ self.W_f + self.b_f)
-            i_t = torch.sigmoid(x_t @ self.U_i + h_t @ self.W_i + self.b_i)
-            C_t = torch.tanh(x_t @ self.U_c + h_t @ self.W_c + self.b_c)
-            c_t = f_t * c_t + i_t * C_t
-            o_t = torch.sigmoid(x_t @ self.U_o + h_t @ self.W_o + self.b_o)
-            h_t = o_t * torch.tanh(c_t)
-
-            hidden_seq.append(h_t.unsqueeze(1))  # transform h_t from shape (batch_size, hidden_size) to shape (batch_size, 1, hidden_size)
-
-        # reshape hidden_seq
-        hidden_seq = torch.cat(hidden_seq, dim=1)  # concatenate list of tensors into one tensor along dimension 1 (batch_size, sequence_size, hidden_size)
-        return (h_t, c_t), hidden_seq

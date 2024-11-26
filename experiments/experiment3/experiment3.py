@@ -5,7 +5,7 @@ import torch.nn as nn
 from matplotlib.lines import Line2D
 from torch import optim
 from torch.utils.data import random_split, DataLoader
-from Datasets.MacroFactorsDataSet import StocksDataSet
+from Datasets.MacroFactorsDataSetNormalizationStocksDifferentNormalization import StocksDataSet #TODO maybe use other DataSet afterwards
 import matplotlib.pyplot as plt
 
 from experiments.experiment3.Model import Model
@@ -97,7 +97,7 @@ def start_training():
     end_time = time.time()
     duration = end_time - start_time
     print(f"Das Training hat {duration:.2f} Sekunden gebraucht.")
-    torch.save(model.state_dict(), "trained_model_experiment0.pth")
+    torch.save(model.state_dict(), "trained_model_experiment3.pth")
 
     plt.savefig("training_loss_plot.png", format='png', dpi=300)
     plt.show()
@@ -109,8 +109,3 @@ def start_training():
     print(f"FINAL TEST LOSS: {test_loss_vals[-1]}")
 
 #start_training()
-
-
-
-
-

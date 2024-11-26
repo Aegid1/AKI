@@ -5,7 +5,7 @@ import torch.nn as nn
 from matplotlib.lines import Line2D
 from torch import optim
 from torch.utils.data import random_split, DataLoader
-from Datasets.MacroFactorsNoNormalizationDataSet import StocksDataSet
+from Datasets.MacroFactorsDataSet import StocksDataSet
 import matplotlib.pyplot as plt
 
 from experiments.experiment3.Model import Model
@@ -108,7 +108,7 @@ def start_training():
     print(f"FIRST TEST LOSS: {test_loss_vals[0]}")
     print(f"FINAL TEST LOSS: {test_loss_vals[-1]}")
 
-start_training()
+#start_training()
 
 
 

@@ -35,13 +35,15 @@ def synchronize_data(base_times, oil_prices, currency_rates, gdp, inflation, int
     return oil_features, currency_features, gdp_features, inflation_features, interest_features, unemployment_features
 
 
-def create_macro_factors_samples():
-    company_names = ["Airbus", "Allianz", "Deutsche Telekom", "Mercedes-Benz", "Volkswagen", "Porsche", "SAP", "Siemens", "Siemens Healthineers", "Deutsche Bank"]
+def create_macro_factors_samples(company_names, training:bool, step_size:int):
     input_dir_stocks = os.path.join('..', 'data', 'stocks')
-    output_dir = os.path.join('..', 'data', 'Samples', 'experiment3')
+    if training:
+        output_dir = os.path.join('..', 'data', 'Samples', 'experiment3')
+    else:
+        output_dir = os.path.join('..', 'data', 'Samples', "TestSamples", 'experiment3')
     os.makedirs(output_dir, exist_ok=True)
 
-    base_dir = '../data/macro_factors'
+    base_dir = os.path.join("..", "data", "macro_factors")
     oil_prices = pd.read_csv(os.path.join(base_dir, 'oil.csv'), parse_dates=['Date'])
     oil_prices['Date'] = oil_prices['Date'].dt.tz_localize(None)
 
@@ -73,17 +75,18 @@ def create_macro_factors_samples():
         all_data.sort_values(by='Datetime', inplace=True)
         all_data.reset_index(drop=True, inplace=True)
 
-        for i in range(0, len(all_data), 25):
+        for i in range(0, len(all_data) - 25, step_size):
             if i + 25 <= len(all_data):
                 sample = all_data.iloc[i:i + 26]
                 stock_features = sample['Open'][:-1].values
                 stock_target = sample['Open'].iloc[-1]
-                datetime_start = sample['Datetime'].iloc[0]
+                datetime_end = sample['Datetime'].iloc[-1]
 
                 base_times = pd.to_datetime(sample['Datetime'])
                 oil_features, currency_features, gdp_features, inflation_features, interest_features, unemployment_features = synchronize_data(base_times, oil_prices, currency_rates, gdp, inflation, interest, unemployment_rate)
 
                 item = {
+                    "company_name": company,
                     'features': {
                         'stock_prices': stock_features,
                         'oil_prices': oil_features,
@@ -94,13 +97,14 @@ def create_macro_factors_samples():
                         'unemployment_rate': unemployment_features,
                     },
                     'target': stock_target,
-                    'datetime': datetime_start
+                    'datetime': datetime_end
                 }
 
-                output_filename = os.path.join(output_dir, f'{company}_{datetime_start.strftime("%Y-%m-%d_%H-%M-%S")}.pkl')
+                output_filename = os.path.join(output_dir, f'{company}_{datetime_end.strftime("%Y-%m-%d_%H-%M-%S")}.pkl')
                 with open(output_filename, 'wb') as f:
                     pickle.dump(item, f)
                 print(f"Sample saved: {output_filename}")
 
 
-create_macro_factors_samples()
+#create_macro_factors_samples(["Airbus", "Allianz", "Deutsche Telekom", "Mercedes-Benz", "Volkswagen", "Porsche", "SAP", "Siemens", "Siemens Healthineers", "Deutsche Bank"], True, 1) #this creates the training samples
+#create_macro_factors_samples(["BMW"], False, 1) #this creates the test samples

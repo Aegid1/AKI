@@ -2,8 +2,8 @@ import math
 
 import torch
 from torch import nn
-from network_layers import MultiInputLSTMMacroFactors as MILSTM
-from network_layers import Attention
+from experiments.experiment3.network_layers import MultiInputLSTMMacroFactors as MILSTM
+from experiments.experiment3.network_layers import Attention
 
 class Model(nn.Module):
 
@@ -43,12 +43,15 @@ class Model(nn.Module):
         milstm_tilde, milst_hidden = self.MI_LSTM_layer(oil_price_tilde, currency_rate_tilde) #milstm_tilde [50,200]
 
         stock_price_out = stock_price_tilde[:, -1, :]
-        milstm_dnn_output = self.MILSTM_DNN(milstm_tilde).squeeze() #this layer serves as a transformation of the hidden_states to a single scalar
-        stock_dnn_output = self.Stock_DNN(stock_price_out).squeeze() #this layer serves as a transformation of the hidden_states to a single scalar
+        milstm_dnn_output = self.MILSTM_DNN(milstm_tilde)
+        milstm_dnn_output_squeezed = milstm_dnn_output.squeeze(1) #this layer serves as a transformation of the hidden_states to a single scalar
+        stock_dnn_output = self.Stock_DNN(stock_price_out)
+        stock_dnn_output_squeezed = stock_dnn_output.squeeze(1) #this layer serves as a transformation of the hidden_states to a single scalar
+
         #attention layer needs all inputs to be in the shape of [50]
         attention_out = self.Attention_layer(
-            stock_tilde= stock_dnn_output,
-            milstm_tilde= milstm_dnn_output,
+            stock_tilde= stock_dnn_output_squeezed,
+            milstm_tilde= milstm_dnn_output_squeezed,
             interest_rate= interest_rate,
             gdp= gdp,
             inflation= inflation_rate,

@@ -1,5 +1,7 @@
 import os
 import random
+
+import joblib
 import numpy as np
 import torch
 from sklearn.preprocessing import MinMaxScaler
@@ -12,7 +14,6 @@ class StocksDataSet(Dataset):
         path = os.path.join('..', '..', 'data', 'Samples', 'experiment3')
         self.paths = os.listdir(path)
         self.paths = [p for p in self.paths if p.endswith('.pkl')]
-        print(len(self.paths))
         random.shuffle(self.paths)
 
         self.stocks_seq_size = stocks_seq_size
@@ -34,6 +35,8 @@ class StocksDataSet(Dataset):
         for key in scalars_to_normalize:
             data = np.array(scalar_data[key]).reshape(-1, 1)
             self.scalar_scalers[key].fit(data)
+            scaler_path = os.path.join("..", "experiments", "experiment3", "scalers", f"{key}_scaler.pkl")
+            joblib.dump(self.scalar_scalers[key], scaler_path)
 
         self.sequence_scalers = {
             "stock_prices": MinMaxScaler(),
