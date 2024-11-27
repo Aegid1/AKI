@@ -2,31 +2,66 @@ import torch
 import torch.nn as nn
 import math
 
-class MultiInputLSTMSentiments(nn.Module):
+class MultiInputLSTMMacroFactors(nn.Module):
     def __init__(self, input_sz: int, hidden_sz: int):
         super().__init__()
         self.input_size = input_sz
         self.hidden_size = hidden_sz
 
-        # i_t
-        self.W_i = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_i = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.b_i = nn.Parameter(torch.Tensor(hidden_sz))
+        # i_s_t
+        self.W_i_s = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_s = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_s = nn.Parameter(torch.Tensor(hidden_sz))
 
-        # i_p_t
-        self.W_i_p = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_i_p = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.b_i_p = nn.Parameter(torch.Tensor(hidden_sz))
+        # i_r_t
+        self.W_i_r = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_r = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_r = nn.Parameter(torch.Tensor(hidden_sz))
 
-        # i_n_t
-        self.W_i_n = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_i_n = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.b_i_n = nn.Parameter(torch.Tensor(hidden_sz))
+        # i_m_t
+        self.W_i_m = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_m = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_m = nn.Parameter(torch.Tensor(hidden_sz))
+
+        # i_ms_t
+        self.W_i_ms = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_ms = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_ms = nn.Parameter(torch.Tensor(hidden_sz))
+
+        # i_mh_t
+        self.W_i_mh = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_mh = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_mh = nn.Parameter(torch.Tensor(hidden_sz))
+
+        # i_sm_t
+        self.W_i_sm = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_sm = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_sm = nn.Parameter(torch.Tensor(hidden_sz))
+
+        # i_em_t
+        self.W_i_em = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_em = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_em = nn.Parameter(torch.Tensor(hidden_sz))
+
+        # i_u_t
+        self.W_i_u = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_u = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_u = nn.Parameter(torch.Tensor(hidden_sz))
+
+        # i_mb_t
+        self.W_i_mb = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_mb = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_mb = nn.Parameter(torch.Tensor(hidden_sz))
+
+        # i_l_t
+        self.W_i_l = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        self.U_i_l = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        self.b_i_l = nn.Parameter(torch.Tensor(hidden_sz))
 
         # f_t
-        self.W_f = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_f = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.b_f = nn.Parameter(torch.Tensor(hidden_sz))
+        # self.W_f = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
+        # self.U_f = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
+        # self.b_f = nn.Parameter(torch.Tensor(hidden_sz))
 
         # c_t
         self.W_c = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
@@ -65,136 +100,106 @@ class MultiInputLSTMSentiments(nn.Module):
         torch.nn.init.zeros_(self.U_c_n)
         torch.nn.init.zeros_(self.b_c_n)
 
-    def forward(self, Y, P, N):
-
-        bs, seq_sz, _ = Y.size()
+    def forward(self, stock, rsi, macd, macdsignal, macdhist, sma, ema, upperband, middleband, lowerband):
+        bs, seq_sz, _ = stock.shape
         hidden_seq = []
+        #initialize start with zeros
         h_t, c_t = (
-            torch.zeros(bs, self.hidden_size).to(Y.device),
-            torch.zeros(bs, self.hidden_size).to(Y.device),
+            torch.zeros(bs, self.hidden_size).to(stock.device),
+            torch.zeros(bs, self.hidden_size).to(stock.device),
         )
-
         for t in range(seq_sz):
-            Y_t = Y[:, t, :]
-            P_t = P[:, t, :]
-            N_t = N[:, t, :]
+            S_t = stock[:, t, :]
+            R_t = rsi[:, t, :]
+            M_t = macd[:, t, :]
+            MS_t = macdsignal[:, t, :]
+            MH_t = macdhist[:, t, :]
+            SM_t = sma[:, t, :]
+            EM_t = ema[:, t, :]
+            U_t = upperband[:, t, :]
+            MB_t = middleband[:, t, :]
+            L_t = lowerband[:, t, :]
 
             #if i have more features or more lstms in the previous step i need more matrices
-            i_t = torch.sigmoid(Y_t @ self.W_i + h_t @ self.U_i + self.b_i)
-            i_p_t = torch.sigmoid(P_t @ self.W_i_p + h_t @ self.U_i_p + self.b_i_p)
-            i_n_t = torch.sigmoid(N_t @ self.W_i_n + h_t @ self.U_i_n + self.b_i_n)
+            i_s_t = torch.sigmoid(S_t @ self.W_i_s + h_t @ self.U_i_s + self.b_i_s) #TODO checken ob hier nicht die gleiche Matrix verwendet werden sollte
+            i_r_t = torch.sigmoid(R_t @ self.W_i_r + h_t @ self.U_i_r + self.b_i_r)
+            i_m_t = torch.sigmoid(M_t @ self.W_i_m + h_t @ self.U_i_m + self.b_i_m)
+            i_ms_t = torch.sigmoid(MS_t @ self.W_i_ms + h_t @ self.U_i_ms + self.b_i_ms)
+            i_mh_t = torch.sigmoid(MH_t @ self.W_i_mh + h_t @ self.U_i_mh + self.b_i_mh)
+            i_sm_t = torch.sigmoid(SM_t @ self.W_i_sm + h_t @ self.U_i_sm + self.b_i_sm)
+            i_em_t = torch.sigmoid(EM_t @ self.W_i_em + h_t @ self.U_i_em + self.b_i_em)
+            i_u_t = torch.sigmoid(U_t @ self.W_i_u + h_t @ self.U_i_u + self.b_i_u)
+            i_mb_t = torch.sigmoid(MB_t @ self.W_i_mb + h_t @ self.U_i_mb + self.b_i_mb)
+            i_l_t = torch.sigmoid(L_t @ self.W_i_l + h_t @ self.U_i_l + self.b_i_l)
 
-            #this always stays the same
-            f_t = torch.sigmoid(Y_t @ self.W_f + h_t @ self.U_f + self.b_f)
+            #if I have more features or more lstms in the previous step I need more matrices
+            S_tilde_t = torch.tanh(S_t @ self.W_c_p + h_t @ self.U_c_p + self.b_c_p)
+            R_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            M_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            MS_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            MH_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            SM_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            EM_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            U_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            MB_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            L_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
 
-            #if i have more features or more lstms in the previous step i need more matrices
-            C_tilde_t = torch.tanh(Y_t @ self.W_c + h_t @ self.U_c + self.b_c)
-            C_p_tilde_t = torch.tanh(P_t @ self.W_c_p + h_t @ self.U_c_p + self.b_c_p)
-            C_n_tilde_t = torch.tanh(N_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
-
-            #this always stays the same
-            o_t = torch.sigmoid(Y_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            #add more outputs
+            o_t_1 = torch.sigmoid(S_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_2 = torch.sigmoid(R_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_3 = torch.sigmoid(M_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_4 = torch.sigmoid(MS_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_5 = torch.sigmoid(MH_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_6 = torch.sigmoid(SM_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_7 = torch.sigmoid(EM_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_8 = torch.sigmoid(U_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_9 = torch.sigmoid(MB_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_10 = torch.sigmoid(L_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t = o_t_1 + o_t_2 + o_t_3 + o_t_4 + o_t_5 + o_t_6 + o_t_7 + o_t_8 + o_t_9 +o_t_10
 
             #if i have more features or more lstms in the previous step i need more values
-            l_t = C_tilde_t * i_t
-            l_p_t = C_p_tilde_t * i_p_t
-            l_n_t = C_n_tilde_t * i_n_t
+            l_s_t = S_tilde_t * i_s_t
+            l_r_t = R_tilde_t * i_r_t
+            l_m_t = M_tilde_t * i_m_t
+            l_ms_t = MS_tilde_t * i_ms_t
+            l_mh_t = MH_tilde_t * i_mh_t
+            l_sm_t = SM_tilde_t * i_sm_t
+            l_em_t = EM_tilde_t * i_em_t
+            l_u_t = U_tilde_t * i_u_t
+            l_mb_t = MB_tilde_t * i_mb_t
+            l_l_t = L_tilde_t * i_l_t
 
             #if i have more features or more lstms in the previous step i need more values, but matrix stays the same
-            u_t = torch.tanh(l_t @ self.W_a * c_t + self.b_a)
-            u_p_t = torch.tanh(l_p_t @ self.W_a * c_t + self.b_a)
-            u_n_t = torch.tanh(l_n_t @ self.W_a * c_t + self.b_a)
+            u_s_t = torch.tanh(l_s_t @ self.W_a * c_t + self.b_a)
+            u_r_t = torch.tanh(l_r_t @ self.W_a * c_t + self.b_a)
+            u_m_t = torch.tanh(l_m_t @ self.W_a * c_t + self.b_a)
+            u_ms_t = torch.tanh(l_ms_t @ self.W_a * c_t + self.b_a)
+            u_mh_t = torch.tanh(l_mh_t @ self.W_a * c_t + self.b_a)
+            u_sm_t = torch.tanh(l_sm_t @ self.W_a * c_t + self.b_a)
+            u_em_t = torch.tanh(l_em_t @ self.W_a * c_t + self.b_a)
+            u_u_t = torch.tanh(l_u_t @ self.W_a * c_t + self.b_a)
+            u_mb_t = torch.tanh(l_mb_t @ self.W_a * c_t + self.b_a)
+            u_l_t = torch.tanh(l_l_t @ self.W_a * c_t + self.b_a)
 
             #if i have more features or more lstms in the previous step i need more matrices
-            alpha_t = torch.softmax(torch.stack([u_t, u_p_t, u_n_t]), dim=0)
-            L_t = alpha_t[0, :, :] * l_t + alpha_t[1, :, :] * l_p_t + alpha_t[2, :, :] * l_n_t
+            alpha_t = torch.softmax(torch.stack([u_s_t, u_r_t, u_m_t, u_ms_t, u_mh_t, u_sm_t, u_em_t, u_u_t, u_mb_t, u_l_t]), dim=0)
+            L_t = (
+                alpha_t[0, :, :] * l_s_t
+                + alpha_t[1, :, :] * l_r_t
+                + alpha_t[2, :, :] * l_m_t
+                + alpha_t[3, :, :] * l_ms_t
+                + alpha_t[4, :, :] * l_mh_t
+                + alpha_t[5, :, :] * l_sm_t
+                + alpha_t[6, :, :] * l_em_t
+                + alpha_t[7, :, :] * l_u_t
+                + alpha_t[8, :, :] * l_mb_t
+                + alpha_t[9, :, :] * l_l_t
+            )
 
-            c_t = f_t * c_t + L_t
+            c_t = c_t + L_t
             h_t = o_t * torch.tanh(c_t)
-
             hidden_seq.append(h_t.unsqueeze(0))
 
         hidden_seq = torch.cat(hidden_seq, dim=0)
         hidden_seq = hidden_seq.transpose(0, 1).contiguous()
         return h_t, hidden_seq
-
-
-class Attention(nn.Module):
-    def __init__(self, input_sz: int, hidden_sz: int):
-        super().__init__()
-        self.input_size = input_sz
-        self.hidden_size = hidden_sz
-
-        # i_t
-        self.W_b = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.b_b = nn.Parameter(torch.Tensor(hidden_sz))
-        self.v_b = nn.Parameter(torch.Tensor(hidden_sz))
-
-        self.init_weights()
-
-    def init_weights(self):
-        stdv = 1.0 / math.sqrt(self.hidden_size)
-        for weight in self.parameters():
-            weight.data.uniform_(-stdv, stdv)
-
-    def forward(self, Y_tilde_prime):
-
-        j_t_list = list()
-        for i in range(20):
-            temp = Y_tilde_prime[:, i, :] @ self.W_b
-            j_t_list.append(torch.tanh(temp + self.b_b) @ self.v_b.t())
-
-        beta = torch.softmax(torch.stack(j_t_list), dim=0)
-        y_tilde = Y_tilde_prime.permute(0,2,1) @ torch.unsqueeze(beta.transpose(0,1), dim=2)
-        return y_tilde.squeeze()
-
-
-class CustomLSTM(nn.Module):
-    def __init__(self, input_sz: int, hidden_sz: int):
-        super().__init__()
-        self.input_size = input_sz
-        self.hidden_size = hidden_sz
-
-        self.U_f = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_i = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_c = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-        self.U_o = nn.Parameter(torch.Tensor(input_sz, hidden_sz))
-
-        self.W_f = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.W_i = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.W_c = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-        self.W_o = nn.Parameter(torch.Tensor(hidden_sz, hidden_sz))
-
-        self.b_i = nn.Parameter(torch.Tensor(hidden_sz))
-        self.b_f = nn.Parameter(torch.Tensor(hidden_sz))
-        self.b_c = nn.Parameter(torch.Tensor(hidden_sz))
-        self.b_o = nn.Parameter(torch.Tensor(hidden_sz))
-
-        self.init_weights()
-
-    def init_weights(self):
-        stdv = 1.0 / math.sqrt(self.hidden_size)
-        for weight in self.parameters():
-            weight.data.uniform_(-stdv, stdv)
-
-    def forward(self, x):
-        bs, seq_sz, _ = x.shape  #assumes x.shape represents (batch_size, sequence_size, input_size)
-        hidden_seq = []
-        h_t = torch.zeros(bs, self.hidden_size)  #initialize states für den ersten step, da wir hier noch keinen vorherigen Schritt haben
-        c_t = torch.zeros(bs, self.hidden_size)
-
-        for t in range(seq_sz):
-            x_t = x[:, t, :]
-
-            f_t = torch.sigmoid(x_t @ self.U_f + h_t @ self.W_f + self.b_f)
-            i_t = torch.sigmoid(x_t @ self.U_i + h_t @ self.W_i + self.b_i)
-            C_t = torch.tanh(x_t @ self.U_c + h_t @ self.W_c + self.b_c)
-            c_t = f_t * c_t + i_t * C_t
-            o_t = torch.sigmoid(x_t @ self.U_o + h_t @ self.W_o + self.b_o)
-            h_t = o_t * torch.tanh(c_t)
-
-            hidden_seq.append(h_t.unsqueeze(1))  # transform h_t from shape (batch_size, hidden_size) to shape (batch_size, 1, hidden_size)
-
-        # reshape hidden_seq
-        hidden_seq = torch.cat(hidden_seq, dim=1)  # concatenate list of tensors into one tensor along dimension 1 (batch_size, sequence_size, hidden_size)
-        return (h_t, c_t), hidden_seq

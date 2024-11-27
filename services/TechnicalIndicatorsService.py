@@ -17,7 +17,7 @@ class TechnicalindicatorsService:
         file_path = os.path.join("data", "stocks", f"{company_name}")
         df = self.get_stock_data_as_df(file_path)
 
-        macd, macdsignal, macdhist = talib.MACD(df['open'], fastperiod=fast_period, slowperiod=slow_period, signalperiod=signalperiod)#14, 26, 9
+        macd, macdsignal, macdhist = talib.MACD(df['Open'], fastperiod=fast_period, slowperiod=slow_period, signalperiod=signalperiod)#14, 26, 9
         return macd, macdsignal, macdhist
 
 

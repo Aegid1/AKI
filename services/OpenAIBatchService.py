@@ -6,7 +6,6 @@ from datetime import datetime
 import pandas as pd
 import yaml
 from openai import OpenAI
-import tiktoken
 
 class OpenAIBatchService:
 
