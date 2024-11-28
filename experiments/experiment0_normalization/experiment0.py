@@ -123,4 +123,4 @@ def start_training_normalization():
     print(f"FIRST TEST LOSS: {test_loss_vals[0]}")
     print(f"FINAL TEST LOSS: {test_loss_vals[-1]}")
 
-start_training_normalization()
+#start_training_normalization()

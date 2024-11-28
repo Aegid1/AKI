@@ -125,4 +125,4 @@ def start_training(batch_size, hidden_size, learning_rate):
     print(f"FIRST TEST LOSS: {test_loss_vals[0]}")
     print(f"FINAL TEST LOSS: {test_loss_vals[-1]}")
 
-start_training(20, 100, 0.0001) # -> 0.07
+#start_training(20, 100, 0.0001) # -> 0.07

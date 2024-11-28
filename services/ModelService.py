@@ -3,6 +3,7 @@ import pickle
 
 import joblib
 import pandas as pd
+import talib
 import torch
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
@@ -70,7 +71,7 @@ class ModelService:
         plt.show()
 
 
-    def test_model_prediction_no_normalization(self, experiment:str, model_path:str):
+    def test_model_prediction_no_normalization_experiment0(self, experiment:str, model_path:str):
         model_path = f"./experiments/{experiment}/{model_path}"
         input_size = 1
         hidden_size = 200
@@ -277,3 +278,94 @@ class ModelService:
     #     save_path = f"./experiments/{experiment}/prediction_plot_{experiment}.png"
     #     plt.savefig(save_path, format='png', dpi=300)
     #     plt.show()
+
+    def test_model_prediction_experiment2_batch_normalization(self, model_path):
+        model_path = os.path.join("experiments", "experiment2", f"{model_path}")
+
+        input_size = 1
+        hidden_size = 100
+        model = Model2(input_size=input_size, hidden_size=hidden_size)
+
+        state_dict = torch.load(model_path)
+        model.load_state_dict(state_dict)
+        model.eval()
+        pickle_directory = os.path.join("data", "Samples", "TestSamples", "experiment2")
+        pkl_files = [f for f in os.listdir(pickle_directory) if f.endswith('.pkl')]
+
+        predictions_df = pd.DataFrame(columns=["Date", "Prediction", "Actual"])
+        for file in pkl_files:
+            file_path = os.path.join(pickle_directory, file)
+            with open(file_path, 'rb') as f:
+                item = pickle.load(f)
+                features = []
+
+                stock_prices = item["features"]["stock_prices"]
+                stock_scaler = MinMaxScaler()
+                stock_tensor = torch.tensor(stock_prices, dtype=torch.float32)
+                stock_prices_scaled = stock_scaler.fit_transform(stock_tensor.reshape(-1,1))
+                features.append(torch.tensor(stock_prices_scaled, dtype=torch.float32).unsqueeze(-1))
+                for key, value in item["features"].items():
+                    if key != "stock_prices":
+                        scaler = MinMaxScaler()
+                        input_tensor = torch.tensor(item["features"][key], dtype=torch.float32)
+                        feature_scaled = scaler.fit_transform(input_tensor.reshape(-1,1))
+                        features.append(torch.tensor(feature_scaled, dtype=torch.float32).unsqueeze(-1))
+
+                prediction_normalized = model.forward(features)
+                prediction_padded = np.pad(prediction_normalized.detach().numpy(), ((0, 0), (0, 24)), mode='constant',
+                                           constant_values=0)
+                prediction = stock_scaler.inverse_transform(prediction_padded)
+                denormalized_prediction = prediction[0, 0]
+
+            actual_value = item['target']
+            prediction_date = item['datetime']
+            print(actual_value)
+            print(denormalized_prediction)
+            new_row = pd.DataFrame({
+                "Date": [prediction_date],
+                "Prediction": [denormalized_prediction],
+                "Actual": [actual_value]
+            })
+            predictions_df = pd.concat([predictions_df, new_row], ignore_index=True)
+
+        predictions_df['Date'] = pd.to_datetime(predictions_df['Date'])
+        predictions_df = predictions_df.sort_values(by="Date").reset_index(drop=True)
+        plt.figure(figsize=(10, 6))
+        plt.plot(predictions_df['Date'], predictions_df['Prediction'], label='Prediction', color='blue')
+        plt.plot(predictions_df['Date'], predictions_df['Actual'], label='Actual', color='orange')
+        plt.xlabel("Date")
+        plt.ylabel("Value")
+        plt.title("Model Predictions vs Actual Values")
+        plt.legend()
+        save_path = f"./experiments/experiment2/prediction_plot_experiment2_batch.png"
+        plt.savefig(save_path, format='png', dpi=300)
+        plt.show()
+
+    def test_moving_average_model(self):
+        data_path = os.path.join("data", "Samples", "TestSamples", "experiment0", "bmw_test_data.csv")
+        data = pd.read_csv(data_path)
+        data['Datetime'] = pd.to_datetime(data['Datetime'])
+        data['MA_25'] = talib.SMA(data['Open'], timeperiod=25)
+
+        predictions_df = pd.DataFrame(columns=["Date", "Prediction", "Actual"])
+        for i in range(25, len(data) - 1):
+            actual_value = data['Open'].iloc[i + 1]
+            prediction_date = data['Datetime'].iloc[i + 1]
+            prediction = data['MA_25'].iloc[i]
+
+            new_row = pd.DataFrame({
+                "Date": [prediction_date],
+                "Prediction": [prediction],
+                "Actual": [actual_value]
+            })
+            predictions_df = pd.concat([predictions_df, new_row], ignore_index=True)
+        plt.figure(figsize=(10, 6))
+        plt.plot(predictions_df['Date'], predictions_df['Prediction'], label='Prediction', color='blue')
+        plt.plot(predictions_df['Date'], predictions_df['Actual'], label='Actual', color='orange')
+        plt.xlabel("Date")
+        plt.ylabel("Value")
+        plt.title("Model Predictions vs Actual Values")
+        plt.legend()
+        save_path = f"./experiments/moving_average_prediction.png"
+        plt.savefig(save_path, format='png', dpi=300)
+        plt.show()

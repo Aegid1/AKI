@@ -14,9 +14,11 @@ class Model(nn.Module):
 
         for i in range(10):
             self.layers.append(nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=1))
+            self.norm_layers.append(nn.LayerNorm(hidden_size))
 
         self.MI_LSTM_layer = MILSTM(hidden_size, hidden_size)
 
+        self.milstm_norm = nn.LayerNorm(hidden_size)
         self.DNN_Layer = nn.Linear(in_features=hidden_size, out_features=1)
         self.init_weights()
 
