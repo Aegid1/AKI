@@ -61,5 +61,5 @@ def create_technical_indicators_samples(company_names, training:bool, step_size:
                 print(f"Sample saved: {output_filename}")
 
 
-#create_technical_indicators_samples(["Airbus", "Allianz", "Deutsche Telekom", "Mercedes-Benz", "Volkswagen", "Porsche", "SAP", "Siemens", "Siemens Healthineers", "Deutsche Bank"], True, 1) #this creates the training samples
+create_technical_indicators_samples(["Airbus", "Allianz", "Deutsche Telekom", "Mercedes-Benz", "Volkswagen", "Porsche", "SAP", "Siemens", "Siemens Healthineers", "Deutsche Bank"], True, 25) #this creates the training samples
 #create_technical_indicators_samples(["BMW"], False, 1) #this creates the test samples

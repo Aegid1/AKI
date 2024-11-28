@@ -10,12 +10,14 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.hidden_size = hidden_size
         self.layers = nn.ModuleList()
+        self.norm_layers = nn.ModuleList()
 
         for i in range(10):
             self.layers.append(nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=1))
 
         self.MI_LSTM_layer = MILSTM(hidden_size, hidden_size)
-        self.DNN_Layer = nn.Linear(in_features=10, out_features=1)
+
+        self.DNN_Layer = nn.Linear(in_features=hidden_size, out_features=1)
         self.init_weights()
 
     def init_weights(self):
@@ -28,7 +30,8 @@ class Model(nn.Module):
         list_tilde = list()
         list_hidden = list()
         for i in range(len(self.layers)):
-            layer_out, layer_hidden = self.layers[i](features[i][:, -1, :])
+            layer_out, layer_hidden = self.layers[i](features[i])
+            layer_out = torch.relu(layer_out)
             list_tilde.append(layer_out)
             list_hidden.append(layer_hidden)
 
@@ -43,12 +46,8 @@ class Model(nn.Module):
             list_tilde[7],
             list_tilde[8],
             list_tilde[9],
-        ) #milstm_tilde [50,200]
-
-        milstm_out = milstm_tilde[:, -1, :]
-        milstm_dnn_output = self.MILSTM_DNN(milstm_out)
-        milstm_dnn_output_squeezed = milstm_dnn_output.squeeze(1) #this layer serves as a transformation of the hidden_states to a single scalar
-
-        out = self.DNN_Layer(milstm_dnn_output_squeezed)
+        ) #milstm_tilde [50, 25, 200]
+        milstm_tilde = torch.relu(milstm_tilde)
+        out = self.DNN_Layer(milstm_tilde)
         output = torch.relu(out)
         return output

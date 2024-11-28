@@ -93,12 +93,6 @@ class MultiInputLSTMMacroFactors(nn.Module):
         stdv = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
-        torch.nn.init.zeros_(self.W_c_p)
-        torch.nn.init.zeros_(self.U_c_p)
-        torch.nn.init.zeros_(self.b_c_p)
-        torch.nn.init.zeros_(self.W_c_n)
-        torch.nn.init.zeros_(self.U_c_n)
-        torch.nn.init.zeros_(self.b_c_n)
 
     def forward(self, stock, rsi, macd, macdsignal, macdhist, sma, ema, upperband, middleband, lowerband):
         bs, seq_sz, _ = stock.shape
@@ -121,40 +115,40 @@ class MultiInputLSTMMacroFactors(nn.Module):
             L_t = lowerband[:, t, :]
 
             #if i have more features or more lstms in the previous step i need more matrices
-            i_s_t = torch.sigmoid(S_t @ self.W_i_s + h_t @ self.U_i_s + self.b_i_s) #TODO checken ob hier nicht die gleiche Matrix verwendet werden sollte
-            i_r_t = torch.sigmoid(R_t @ self.W_i_r + h_t @ self.U_i_r + self.b_i_r)
-            i_m_t = torch.sigmoid(M_t @ self.W_i_m + h_t @ self.U_i_m + self.b_i_m)
-            i_ms_t = torch.sigmoid(MS_t @ self.W_i_ms + h_t @ self.U_i_ms + self.b_i_ms)
-            i_mh_t = torch.sigmoid(MH_t @ self.W_i_mh + h_t @ self.U_i_mh + self.b_i_mh)
-            i_sm_t = torch.sigmoid(SM_t @ self.W_i_sm + h_t @ self.U_i_sm + self.b_i_sm)
-            i_em_t = torch.sigmoid(EM_t @ self.W_i_em + h_t @ self.U_i_em + self.b_i_em)
-            i_u_t = torch.sigmoid(U_t @ self.W_i_u + h_t @ self.U_i_u + self.b_i_u)
-            i_mb_t = torch.sigmoid(MB_t @ self.W_i_mb + h_t @ self.U_i_mb + self.b_i_mb)
-            i_l_t = torch.sigmoid(L_t @ self.W_i_l + h_t @ self.U_i_l + self.b_i_l)
+            i_s_t = torch.relu(S_t @ self.W_i_s + h_t @ self.U_i_s + self.b_i_s) #TODO checken ob hier nicht die gleiche Matrix verwendet werden sollte
+            i_r_t = torch.relu(R_t @ self.W_i_r + h_t @ self.U_i_r + self.b_i_r)
+            i_m_t = torch.relu(M_t @ self.W_i_m + h_t @ self.U_i_m + self.b_i_m)
+            i_ms_t = torch.relu(MS_t @ self.W_i_ms + h_t @ self.U_i_ms + self.b_i_ms)
+            i_mh_t = torch.relu(MH_t @ self.W_i_mh + h_t @ self.U_i_mh + self.b_i_mh)
+            i_sm_t = torch.relu(SM_t @ self.W_i_sm + h_t @ self.U_i_sm + self.b_i_sm)
+            i_em_t = torch.relu(EM_t @ self.W_i_em + h_t @ self.U_i_em + self.b_i_em)
+            i_u_t = torch.relu(U_t @ self.W_i_u + h_t @ self.U_i_u + self.b_i_u)
+            i_mb_t = torch.relu(MB_t @ self.W_i_mb + h_t @ self.U_i_mb + self.b_i_mb)
+            i_l_t = torch.relu(L_t @ self.W_i_l + h_t @ self.U_i_l + self.b_i_l)
 
             #if I have more features or more lstms in the previous step I need more matrices
-            S_tilde_t = torch.tanh(S_t @ self.W_c_p + h_t @ self.U_c_p + self.b_c_p)
-            R_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
-            M_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
-            MS_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
-            MH_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
-            SM_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
-            EM_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
-            U_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
-            MB_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
-            L_tilde_t = torch.tanh(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            S_tilde_t = torch.relu(S_t @ self.W_c_p + h_t @ self.U_c_p + self.b_c_p)
+            R_tilde_t = torch.relu(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            M_tilde_t = torch.relu(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            MS_tilde_t = torch.relu(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            MH_tilde_t = torch.relu(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            SM_tilde_t = torch.relu(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            EM_tilde_t = torch.relu(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            U_tilde_t = torch.relu(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            MB_tilde_t = torch.relu(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            L_tilde_t = torch.relu(R_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
 
             #add more outputs
-            o_t_1 = torch.sigmoid(S_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_2 = torch.sigmoid(R_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_3 = torch.sigmoid(M_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_4 = torch.sigmoid(MS_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_5 = torch.sigmoid(MH_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_6 = torch.sigmoid(SM_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_7 = torch.sigmoid(EM_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_8 = torch.sigmoid(U_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_9 = torch.sigmoid(MB_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_10 = torch.sigmoid(L_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_1 = torch.relu(S_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_2 = torch.relu(R_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_3 = torch.relu(M_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_4 = torch.relu(MS_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_5 = torch.relu(MH_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_6 = torch.relu(SM_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_7 = torch.relu(EM_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_8 = torch.relu(U_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_9 = torch.relu(MB_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_10 = torch.relu(L_t @ self.W_o + h_t @ self.U_o + self.b_o)
             o_t = o_t_1 + o_t_2 + o_t_3 + o_t_4 + o_t_5 + o_t_6 + o_t_7 + o_t_8 + o_t_9 +o_t_10
 
             #if i have more features or more lstms in the previous step i need more values
@@ -170,16 +164,16 @@ class MultiInputLSTMMacroFactors(nn.Module):
             l_l_t = L_tilde_t * i_l_t
 
             #if i have more features or more lstms in the previous step i need more values, but matrix stays the same
-            u_s_t = torch.tanh(l_s_t @ self.W_a * c_t + self.b_a)
-            u_r_t = torch.tanh(l_r_t @ self.W_a * c_t + self.b_a)
-            u_m_t = torch.tanh(l_m_t @ self.W_a * c_t + self.b_a)
-            u_ms_t = torch.tanh(l_ms_t @ self.W_a * c_t + self.b_a)
-            u_mh_t = torch.tanh(l_mh_t @ self.W_a * c_t + self.b_a)
-            u_sm_t = torch.tanh(l_sm_t @ self.W_a * c_t + self.b_a)
-            u_em_t = torch.tanh(l_em_t @ self.W_a * c_t + self.b_a)
-            u_u_t = torch.tanh(l_u_t @ self.W_a * c_t + self.b_a)
-            u_mb_t = torch.tanh(l_mb_t @ self.W_a * c_t + self.b_a)
-            u_l_t = torch.tanh(l_l_t @ self.W_a * c_t + self.b_a)
+            u_s_t = torch.relu(l_s_t @ self.W_a * c_t + self.b_a)
+            u_r_t = torch.relu(l_r_t @ self.W_a * c_t + self.b_a)
+            u_m_t = torch.relu(l_m_t @ self.W_a * c_t + self.b_a)
+            u_ms_t = torch.relu(l_ms_t @ self.W_a * c_t + self.b_a)
+            u_mh_t = torch.relu(l_mh_t @ self.W_a * c_t + self.b_a)
+            u_sm_t = torch.relu(l_sm_t @ self.W_a * c_t + self.b_a)
+            u_em_t = torch.relu(l_em_t @ self.W_a * c_t + self.b_a)
+            u_u_t = torch.relu(l_u_t @ self.W_a * c_t + self.b_a)
+            u_mb_t = torch.relu(l_mb_t @ self.W_a * c_t + self.b_a)
+            u_l_t = torch.relu(l_l_t @ self.W_a * c_t + self.b_a)
 
             #if i have more features or more lstms in the previous step i need more matrices
             alpha_t = torch.softmax(torch.stack([u_s_t, u_r_t, u_m_t, u_ms_t, u_mh_t, u_sm_t, u_em_t, u_u_t, u_mb_t, u_l_t]), dim=0)
@@ -195,9 +189,29 @@ class MultiInputLSTMMacroFactors(nn.Module):
                 + alpha_t[8, :, :] * l_mb_t
                 + alpha_t[9, :, :] * l_l_t
             )
+            # print("stock_prices Attention Weight: ")
+            # print(alpha_t[0, :, :])
+            # print("rsi Attention Weight: ")
+            # print(alpha_t[1, :, :])
+            # print("macd Attention Weight: ")
+            # print(alpha_t[2, :, :])
+            # print("macdsignal Attention Weight: ")
+            # print(alpha_t[3, :, :])
+            # print("macdhist Attention Weight: ")
+            # print(alpha_t[4, :, :])
+            # print("sma Attention Weight: ")
+            # print(alpha_t[5, :, :])
+            # print("ema Attention Weight: ")
+            # print(alpha_t[6, :, :])
+            # print("upperband Attention Weight: ")
+            # print(alpha_t[7, :, :])
+            # print("middleband Attention Weight: ")
+            # print(alpha_t[8, :, :])
+            # print("lowerband Attention Weight: ")
+            # print(alpha_t[9, :, :])
 
             c_t = c_t + L_t
-            h_t = o_t * torch.tanh(c_t)
+            h_t = o_t * torch.relu(c_t)
             hidden_seq.append(h_t.unsqueeze(0))
 
         hidden_seq = torch.cat(hidden_seq, dim=0)

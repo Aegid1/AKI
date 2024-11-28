@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 from experiments.experiment0_normalization.experiment0 import Model as Model0
+from experiments.experiment2.experiment2 import Model as Model2
 from experiments.experiment3.experiment3 import Model as Model3
 from utils.macro_factors_utils import get_last_n_valid_values
 
