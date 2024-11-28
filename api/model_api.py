@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.post("/model/test/normalization/experiment0/{model_path}")
 def test_model_output_normalization(model_path:str, model_service: ModelService = Depends()):
-    model_service.test_model_prediction_normalization_experiment0("experiment0", model_path)
+    model_service.test_model_prediction_normalization_experiment0("experiment0_normalization", model_path)
 
 
 @router.post("/model/test/experiment0/{model_path}")

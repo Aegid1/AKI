@@ -11,12 +11,11 @@ import numpy as np
 from experiments.experiment0_normalization.experiment0 import Model as Model0
 from experiments.experiment2.experiment2 import Model as Model2
 from experiments.experiment3.experiment3 import Model as Model3
-from utils.macro_factors_utils import get_last_n_valid_values
 
 class ModelService:
 
     def test_model_prediction_normalization_experiment0(self, experiment:str, model_path:str):
-        model_path = f"./experiments/{experiment}/{model_path}"
+        model_path = os.path.join("experiments", f"{experiment}",f"{model_path}")
         input_size = 1
         hidden_size = 200
         model = Model0(input_size=input_size, hidden_size=hidden_size)
@@ -59,13 +58,17 @@ class ModelService:
                 "Actual": [actual_value]
             })
             predictions_df = pd.concat([predictions_df, new_row], ignore_index=True)
+
+        predictions_df['Difference'] = abs(predictions_df['Prediction'] - predictions_df['Actual'])
+        average_difference = predictions_df['Difference'].mean()
+        print(average_difference)
         plt.figure(figsize=(10, 6))
         plt.plot(predictions_df['Date'], predictions_df['Prediction'], label='Prediction', color='blue')
         plt.plot(predictions_df['Date'], predictions_df['Actual'], label='Actual', color='orange')
         plt.xlabel("Date")
         plt.ylabel("Value")
         plt.title("Model Predictions vs Actual Values")
-        plt.legend()
+        plt.legend(title=f"Average Difference: {average_difference:.4f}")
         save_path = f"./experiments/{experiment}/prediction_plot_{experiment}.png"
         plt.savefig(save_path, format='png', dpi=300)
         plt.show()
@@ -108,13 +111,17 @@ class ModelService:
                 "Actual": [actual_value]
             })
             predictions_df = pd.concat([predictions_df, new_row], ignore_index=True)
+
+        predictions_df['Difference'] = abs(predictions_df['Prediction'] - predictions_df['Actual'])
+        average_difference = predictions_df['Difference'].mean()
+        print(average_difference)
         plt.figure(figsize=(10, 6))
         plt.plot(predictions_df['Date'], predictions_df['Prediction'], label='Prediction', color='blue')
         plt.plot(predictions_df['Date'], predictions_df['Actual'], label='Actual', color='orange')
         plt.xlabel("Date")
         plt.ylabel("Value")
         plt.title("Model Predictions vs Actual Values")
-        plt.legend()
+        plt.legend(title=f"Average Difference: {average_difference:.4f}")
         save_path = f"./experiments/{experiment}/prediction_plot_{experiment}.png"
         plt.savefig(save_path, format='png', dpi=300)
         plt.show()
@@ -189,14 +196,17 @@ class ModelService:
                 "Actual": [actual_value]
             })
             predictions_df = pd.concat([predictions_df, new_row], ignore_index=True)
-        print(predictions_df)
+
+        predictions_df['Difference'] = abs(predictions_df['Prediction'] - predictions_df['Actual'])
+        average_difference = predictions_df['Difference'].mean()
+        print(average_difference)
         plt.figure(figsize=(10, 6))
         plt.plot(predictions_df['Date'], predictions_df['Prediction'], label='Prediction', color='blue')
         plt.plot(predictions_df['Date'], predictions_df['Actual'], label='Actual', color='orange')
         plt.xlabel("Date")
         plt.ylabel("Value")
         plt.title("Model Predictions vs Actual Values")
-        plt.legend()
+        plt.legend(title=f"Average Difference: {average_difference:.4f}")
         save_path = f"./experiments/{experiment}/prediction_plot_{experiment}.png"
         plt.savefig(save_path, format='png', dpi=300)
         plt.show()
@@ -330,14 +340,17 @@ class ModelService:
 
         predictions_df['Date'] = pd.to_datetime(predictions_df['Date'])
         predictions_df = predictions_df.sort_values(by="Date").reset_index(drop=True)
+        predictions_df['Difference'] = abs(predictions_df['Prediction'] - predictions_df['Actual'])
+        average_difference = predictions_df['Difference'].mean()
+        print(average_difference)
         plt.figure(figsize=(10, 6))
         plt.plot(predictions_df['Date'], predictions_df['Prediction'], label='Prediction', color='blue')
         plt.plot(predictions_df['Date'], predictions_df['Actual'], label='Actual', color='orange')
         plt.xlabel("Date")
         plt.ylabel("Value")
         plt.title("Model Predictions vs Actual Values")
-        plt.legend()
-        save_path = f"./experiments/experiment2/prediction_plot_experiment2_batch.png"
+        plt.legend(title=f"Average Difference: {average_difference:.4f}")
+        save_path = os.path.join("experiments", "experiment2", "prediction_plot_experiment2.png")
         plt.savefig(save_path, format='png', dpi=300)
         plt.show()
 
@@ -359,13 +372,17 @@ class ModelService:
                 "Actual": [actual_value]
             })
             predictions_df = pd.concat([predictions_df, new_row], ignore_index=True)
+
+        predictions_df['Difference'] = abs(predictions_df['Prediction'] - predictions_df['Actual'])
+        average_difference = predictions_df['Difference'].mean()
+        print(average_difference)
         plt.figure(figsize=(10, 6))
         plt.plot(predictions_df['Date'], predictions_df['Prediction'], label='Prediction', color='blue')
         plt.plot(predictions_df['Date'], predictions_df['Actual'], label='Actual', color='orange')
         plt.xlabel("Date")
         plt.ylabel("Value")
         plt.title("Model Predictions vs Actual Values")
-        plt.legend()
+        plt.legend(title=f"Average Difference: {average_difference:.4f}")
         save_path = f"./experiments/moving_average_prediction.png"
         plt.savefig(save_path, format='png', dpi=300)
         plt.show()
