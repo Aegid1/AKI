@@ -181,6 +181,32 @@ class OpenAIBatchService:
             file.write(json_str + '\n')
 
     def __save_batch_results_in_csv_file(self, results, company_name: str):
+        """
+            Saves batch sentiment analysis results to a CSV file.
+
+            This function processes the batch of results containing sentiment analysis data for different documents. It
+            extracts the relevant information (document ID, sentiment analysis, and date), organizes it into a structured
+            DataFrame, and saves the results as a CSV file.
+
+            Parameters:
+            - results (list): A list of result dictionaries, each containing the sentiment analysis data for a document.
+            - company_name (str): The name of the company to be used in the output CSV file's path and filename.
+
+            Workflow:
+            1. Iterates through the provided results to extract document IDs, sentiment analysis responses, and their corresponding
+               dates.
+            2. Extracts short-term sentiment, long-term sentiment, and relevancy from the response, handling any issues with
+               incorrect formatting.
+            3. Retrieves the date of the document based on the document ID and company name.
+            4. Creates a DataFrame containing the extracted data.
+            5. Converts the date column to a proper datetime format.
+            6. Determines the minimum and maximum date in the dataset for naming the CSV file.
+            7. Saves the DataFrame as a CSV file with the name corresponding to the date range.
+
+            Example:
+            - The resulting CSV file will be saved in the "data/sentiments_news/{company_name}/{min_date}_to_{max_date}.csv" format,
+              where `{min_date}` and `{max_date}` represent the date range of the sentiment analysis results.
+            """
         data = []
         # Iterate through all results
         for result in results:
@@ -231,12 +257,38 @@ class OpenAIBatchService:
         df.to_csv(csv_filename, index=False)
 
     def __truncate_to_char_limit(self, text, char_limit):
+        """
+            Truncates the input text to a specified character limit.
+
+            This function checks if the length of the text exceeds the given character limit and truncates the text
+            accordingly. If the length is within the limit, it returns the original text.
+
+            Parameters:
+            - text (str): The text to be truncated.
+            - char_limit (int): The maximum allowed character length.
+
+            Returns:
+            - str: The truncated text if the length exceeds the limit, or the original text if not.
+        """
         if len(text) > char_limit:
             return text[:char_limit]
         return text
 
 
     def __delete_batch_file(self, filename: str, company_name:str):
+        """
+            Deletes a specified batch file from the filesystem.
+
+            This function attempts to delete a batch file from the 'batches' directory. If the file exists, it is removed.
+            Otherwise, an error message is displayed.
+
+            Parameters:
+            - filename (str): The name of the batch file to be deleted.
+            - company_name (str): The name of the company (used to locate the file within the company's directory).
+
+            Returns:
+            - None: This function does not return any value.
+        """
         file_path = os.path.join("data", "batches", f"{company_name}", f"{filename}")
         try:
             if os.path.exists(file_path):
@@ -249,6 +301,19 @@ class OpenAIBatchService:
 
 
     def __get_date_of_document(self, document_id, company_name):
+        """
+            Retrieves the publication date of a document from its associated CSV file.
+
+            This function searches through the company's merged news CSV files to find a document with the specified
+            `document_id` and extracts its publication date.
+
+            Parameters:
+            - document_id (str): The ID of the document to retrieve the date for.
+            - company_name (str): The name of the company (used to locate the directory containing the CSV files).
+
+            Returns:
+            - datetime: The publication date of the document.
+        """
         directory = f"data/news/{company_name}/"
         for filename in os.listdir(directory):
             if filename.endswith(".csv") and "merged" in filename:
@@ -265,7 +330,19 @@ class OpenAIBatchService:
 
 
     def __get_input_file_name_from_batch(self, batch):
+        """
+            Retrieves the input file name from a batch object.
 
+            This function uses the `input_file_id` from the provided batch object to retrieve the associated file's name
+            from the client. If the file name is found, it is returned. Otherwise, a message is printed indicating that
+            the name could not be found.
+
+            Parameters:
+            - batch: The batch object containing the input file ID.
+
+            Returns:
+            - str: The name of the input file, or None if the name cannot be found.
+        """
         input_file_id = batch.input_file_id
         input_file = self.client.files.retrieve(input_file_id)
         input_file_name = input_file.filename
@@ -275,19 +352,3 @@ class OpenAIBatchService:
         else:
             print("Der Name der Input-Datei konnte nicht gefunden werden.")
             return None
-
-
-    def __count_tokens(self, text, model="gpt-4"):
-        """
-        Berechnet die Anzahl der Tokens in einem Text für ein bestimmtes Modell.
-
-        Parameters:
-            text (str): Der Text, dessen Tokens gezählt werden sollen.
-            model (str): Das Modell, für das die Tokenisierung durchgeführt wird (z. B. "gpt-4").
-
-        Returns:
-            int: Anzahl der Tokens im Text.
-        """
-        # Tokenizer für das angegebene Modell abrufen
-        encoding = tiktoken.encoding_for_model(model)
-        return len(encoding.encode(text))

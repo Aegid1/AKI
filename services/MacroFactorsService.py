@@ -10,6 +10,18 @@ class MacroFactorsService:
     api_key = config['KEYS']['alpha_vantage']
 
     def save_central_interest_rate(self, start_period: str, end_period: str):
+        """
+            Fetches and saves the central interest rate data from the ECB API.
+
+            Parameters:
+            - start_period (str): The start period in 'YYYY-MM' format.
+            - end_period (str): The end period in 'YYYY-MM' format.
+
+            Data Processing:
+            - Fetches data using the ECB API series identifier 'FM.B.U2.EUR.4F.KR.MRR_FR.LEV'.
+            - Selects and renames columns for better clarity.
+            - Saves the resulting DataFrame as a CSV file.
+        """
         # start_period = 2022-11 and end_period
         df = ecbdata.get_series('FM.B.U2.EUR.4F.KR.MRR_FR.LEV', start=start_period, end=end_period)
         df = df[["TIME_PERIOD", "OBS_VALUE"]]
@@ -18,6 +30,18 @@ class MacroFactorsService:
 
 
     def save_inflation_rate(self, start_period: str, end_period: str):
+        """
+            Fetches and saves the inflation rate data from the ECB API.
+
+            Parameters:
+            - start_period (str): The start period in 'YYYY-MM' format.
+            - end_period (str): The end period in 'YYYY-MM' format.
+
+            Data Processing:
+            - Fetches data using the ECB API series identifier 'ICP.M.DE.N.000000.4.ANR'.
+            - Selects and renames columns for better clarity.
+            - Saves the resulting DataFrame as a CSV file.
+            """
         df = ecbdata.get_series('ICP.M.DE.N.000000.4.ANR', start=start_period, end=end_period)
         df = df[["TIME_PERIOD", "OBS_VALUE"]]
         df = df.rename(columns={"TIME_PERIOD": "Date", "OBS_VALUE": "Value"})
@@ -25,6 +49,18 @@ class MacroFactorsService:
 
 
     def save_unemployment_rate(self, start_period: str, end_period: str):
+        """
+            Fetches and saves the unemployment rate data from the ECB API.
+
+            Parameters:
+            - start_period (str): The start period in 'YYYY-MM' format.
+            - end_period (str): The end period in 'YYYY-MM' format.
+
+            Data Processing:
+            - Fetches data using the ECB API series identifier 'LFSI.M.DE.S.UNEHRT.TOTAL0.15_74.T'.
+            - Selects and renames columns for better clarity.
+            - Saves the resulting DataFrame as a CSV file.
+            """
         df = ecbdata.get_series('LFSI.M.DE.S.UNEHRT.TOTAL0.15_74.T', start=start_period, end=end_period)
         df = df[["TIME_PERIOD", "OBS_VALUE"]]
         df = df.rename(columns={"TIME_PERIOD": "Date", "OBS_VALUE": "Value"})
@@ -32,6 +68,19 @@ class MacroFactorsService:
 
 
     def save_gdp(self, start_period: str, end_period: str):
+        """
+            Fetches and saves the GDP data from the ECB API.
+
+            Parameters:
+            - start_period (str): The start period in 'YYYY-MM' format.
+            - end_period (str): The end period in 'YYYY-MM' format.
+
+            Data Processing:
+            - Fetches data using the ECB API series identifier 'MNA.Q.N.DE.W2.S1.S1.B.B1GQ._Z._Z._Z.EUR.V.N'.
+            - Converts quarterly data to monthly data (first day of the corresponding quarter).
+            - Selects and renames columns for better clarity.
+            - Saves the resulting DataFrame as a CSV file.
+            """
         df = ecbdata.get_series('MNA.Q.N.DE.W2.S1.S1.B.B1GQ._Z._Z._Z.EUR.V.N', start=start_period, end=end_period)
         df = df[["TIME_PERIOD", "OBS_VALUE"]]
 
@@ -47,6 +96,19 @@ class MacroFactorsService:
 
 
     def save_currency_euro_dollar(self, start_period: str, end_period: str):
+        """
+        Fetches and saves the daily EUR to USD exchange rate data.
+
+        Parameters:
+        - start_period (str): The start period in 'YYYY-MM-DD' format.
+        - end_period (str): The end period in 'YYYY-MM-DD' format.
+
+        Data Processing:
+        - Fetches daily currency exchange rates using the Alpha Vantage API.
+        - Filters the data to only include dates within the specified range.
+        - Renames columns for better clarity.
+        - Saves the resulting DataFrame as a CSV file.
+        """
         fx = ForeignExchange(key=self.api_key, output_format='json')
         data, meta_data = fx.get_currency_exchange_daily(from_symbol='EUR', to_symbol='USD', outputsize='full')
 
@@ -70,6 +132,19 @@ class MacroFactorsService:
 
     #only takes the WTI oil price and not the BRENT
     def save_oil_prices(self, start_period: str, end_period: str):
+        """
+        Fetches and saves daily WTI oil price data.
+
+        Parameters:
+        - start_period (str): The start period in 'YYYY-MM-DD' format.
+        - end_period (str): The end period in 'YYYY-MM-DD' format.
+
+        Data Processing:
+        - Fetches daily oil prices using the Alpha Vantage API for WTI oil.
+        - Filters the data to only include dates within the specified range.
+        - Renames columns for better clarity.
+        - Saves the resulting DataFrame as a CSV file.
+        """
         ts = TimeSeries(key=self.api_key, output_format='json')
         data, meta_data = ts.get_daily(symbol="WTI", outputsize='full')
 
@@ -92,6 +167,13 @@ class MacroFactorsService:
 
 
     def save_as_csv(self, filename: str, dataframe):
+        """
+        Saves a DataFrame to a CSV file.
+
+        Parameters:
+        - filename (str): The name of the file (without extension) where the DataFrame will be saved.
+        - dataframe (DataFrame): The pandas DataFrame to save.
+        """
         filepath = f"data/macro_factors/{filename}.csv"
         dataframe.to_csv(filepath, index=False)
 

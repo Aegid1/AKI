@@ -124,6 +124,20 @@ class NewsService:
 
 
     def get_embedding(self, text, tokenizer, model):
+        """
+        Retrieves the embedding of a given text using a tokenizer and a model.
+
+        This function tokenizes the input text, passes it through the model to obtain hidden states, and
+        returns the mean of the last hidden state as the embedding.
+
+        Parameters:
+        - text (str): The input text for which the embedding is to be generated.
+        - tokenizer (PreTrainedTokenizer): A tokenizer from a pretrained model to convert text into tokens.
+        - model (PreTrainedModel): A pretrained model (BERT) to generate embeddings.
+
+        Returns:
+        - embeddings (numpy.ndarray): The mean of the last hidden state of the model, representing the text embedding.
+        """
         inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
         outputs = model(**inputs)
         embeddings = outputs.last_hidden_state.mean(dim=1).detach().numpy()
@@ -131,14 +145,38 @@ class NewsService:
 
 
     def determine_length_factor(self, length_topic, length_content):
+        """
+        It appeared, that short texts had a way better cosine similiarity with the keywords, than longer texts.
+        This was also the case when the content didnt fit, therefore a length factor was used to tackle this issue.
+
+        Calculates a length factor based on the topic and content lengths, with a limit on the maximum value.
+
+        This function uses the logarithm of the maximum of the topic and content lengths to compute a raw length factor,
+        then applies a maximum limit to ensure the factor does not exceed a threshold.
+
+        Parameters:
+        - length_topic (int): The length of the topic (e.g., number of words or characters).
+        - length_content (int): The length of the content (e.g., number of words or characters).
+        """
         max_length_factor = 6
         raw_length_factor = np.log(1 + max(length_topic, length_content))
         length_factor = min(raw_length_factor, max_length_factor)  # Limit the length factor
-        # the limit results in accepting articles with a minimum average cosine similarity of 0.55
         return length_factor
 
 
     def load_keywords_from_csv(self, csv_file):
+        """
+        Loads a list of keywords from a CSV file.
+
+        This function reads a CSV file where each row contains a single keyword,
+        and returns a list of those keywords.
+
+        Parameters:
+        - csv_file (str): The path to the CSV file containing the keywords.
+
+        Returns:
+        - keywords (list of str): A list of keywords read from the CSV file.
+        """
         keywords = []
         with open(csv_file, newline='', encoding='utf-8') as csvfile:
             reader = csv.reader(csvfile)
@@ -149,6 +187,19 @@ class NewsService:
 
 
     def get_open_days(self, start_date_str, end_date_str):
+        """
+        Determines the list of weekdays (Monday to Friday) that are not holidays between two given dates.
+
+        This function calculates the weekdays (excluding holidays) between a start and end date,
+        considering both fixed holidays (e.g., New Year's Day, Christmas) and specific holiday dates.
+
+        Parameters:
+        - start_date_str (str): The start date in the format "DD/MM/YYYY".
+        - end_date_str (str): The end date in the format "DD/MM/YYYY".
+
+        Returns:
+        - open_days (list of str): A list of strings representing the weekdays (in "DD/MM/YYYY" format) that are not holidays.
+        """
         start_date = datetime.strptime(start_date_str, "%d/%m/%Y").date()
         end_date = datetime.strptime(end_date_str, "%d/%m/%Y").date()
 
@@ -198,6 +249,23 @@ class NewsService:
 
 
     def get_actual_date_of_article(self, url:str, placeholder_date:str):
+        """
+            Extracts the actual publication date of an article from a given URL.
+
+            This function tries to extract the publication date from various HTML elements, such as meta tags and time tags.
+            If no date is found in these tags, it attempts to infer the date from the text content by extracting the time
+            and combining it with a placeholder date. The final result is returned in a standardized UTC format.
+
+            Parameters:
+            - url (str): The URL of the article from which the publication date is to be extracted.
+            - placeholder_date (str): A fallback date (in ISO format) used when the actual publication time cannot be determined.
+
+            Returns:
+            - str: The publication date in the format "Day, DD Mon YYYY HH:MM:SS GMT" in UTC time zone. If the date cannot be found or parsed, the original date string is returned.
+
+            Raises:
+            - ValueError: If no valid timestamp can be found or parsed from the article's content.
+        """
         try:
             response = requests.get(url)
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -246,7 +314,28 @@ class NewsService:
 
 
     def merge_articles(self, company_name:str, month:str, year:str):
+        """
+            The idea is, to merge general news articles with company specific news, because
+            general news can have different meanings to different companies.
+            Merges news articles for a specific company and month into a single dataset.
 
+            This function reads two CSV files containing news articles: one for general economic news and one for the specific
+            company. It merges the articles, cleans up the dates, filters the articles by the specified time period, and then
+            saves the merged dataset into a new CSV file.
+
+            Parameters:
+            - company_name (str): The name of the company whose articles are to be merged.
+            - month (str): The month (in "MM" format) for which the articles are being processed.
+            - year (str): The year (in "YYYY" format) for which the articles are being processed.
+
+            Workflow:
+            1. Reads the economic news and company-specific news articles for the given month and year from CSV files.
+            2. Merges the two datasets into a single DataFrame.
+            3. Converts the date column to a datetime format, ensuring no time zone information is retained.
+            4. Filters the articles to include only those within the specified time period (from the 1st to the last day of the month).
+            5. Sorts the articles by date and resets the index.
+            6. Saves the resulting dataset as a CSV file named after the company and the specified month/year.
+        """
         df1 = pd.read_csv(f"data/news/Wirtschaft/Wirtschaft_sorted_{month}_{year}.csv", header=None, names=["ID", "Datum", "Text"])
         df2 = pd.read_csv(f"data/news/{company_name}/{company_name}_sorted_{month}_{year}.csv", header=None, names=["ID", "Datum", "Text"])
 
@@ -267,6 +356,23 @@ class NewsService:
         merged_df.to_csv(f"data/news/{company_name}/{company_name}_merged_{month}_{year}.csv", index=False, header=False)
 
     def create_monthly_intervals(self, start_date: str, end_date: str):
+        """
+            Creates a list of monthly intervals between the given start and end dates.
+
+            This function generates a series of monthly intervals between the specified start and end dates. Each interval is
+            represented as a tuple with a start date and an end date.
+
+            Parameters:
+            - start_date (str): The start date of the range in "DD/MM/YYYY" format.
+            - end_date (str): The end date of the range in "DD/MM/YYYY" format.
+
+            Returns:
+            - list: A list of tuples where each tuple contains the start and end dates of a month in the format "DD/MM/YYYY".
+
+            Example:
+            - If the start date is "01/01/2023" and the end date is "31/03/2023", the function will return:
+              [("01/01/2023", "31/01/2023"), ("01/02/2023", "28/02/2023"), ("01/03/2023", "31/03/2023")]
+            """
         start_date = datetime.strptime(start_date, "%d/%m/%Y")
         end_date = datetime.strptime(end_date, "%d/%m/%Y")
 

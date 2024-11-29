@@ -27,8 +27,6 @@ def get_articles_from_news_api(request: NewsApiRequest, news_api_service: NewsSe
    return articles
 
 
-
-
 @router.post("/articles/news")
 def store_articles_from_news_api(request: NewsApiRequest,
                                 news_service: NewsService = Depends()):
@@ -59,11 +57,39 @@ def store_articles_from_news_api(request: NewsApiRequest,
    articles_sorted.to_csv(f"data/news/{request.company_name}/{request.company_name}_sorted.csv", index=False, header=False)
 
 
-
-
 @router.post("/articles/news/all")
 def store_all_relevant_articles_from_news_api(request: NewsApiRequest, news_api_service: NewsService = Depends()):
+   """
+        Fetch and store all relevant articles from a news API based on the given request.
 
+        This endpoint retrieves news articles within a specified date range and filters
+        them for relevance using predefined criteria. The relevant articles are stored
+        in a CSV file, organized by month and year.
+
+        Parameters:
+        - request (NewsApiRequest): The request containing parameters such as the start
+          and end dates, company name (if applicable), and the maximum number of pages
+          to fetch from the news API.
+        - news_api_service (NewsService): A service for interacting with the news API
+          and performing operations like date conversion and article relevance checking.
+          Provided via dependency injection.
+
+        Processing Steps:
+        1. The date range is divided into monthly intervals.
+        2. For each interval, fetch articles using the API.
+        3. Filter articles to keep only the relevant ones using a relevance threshold (3.3)
+         -> this threshold is a score calculated with embeddings.
+        4. Handle placeholder dates from the API and convert them to actual dates.
+        5. Remove duplicates and sort the articles by date.
+        6. Save the filtered articles into a CSV file in a structured format.
+
+        Returns:
+        None: The function performs file I/O but does not return a response.
+
+        Raises:
+        - Various exceptions can be encountered during date parsing or file operations,
+          which are handled gracefully within the function to ensure smooth execution.
+   """
    dates = news_api_service.create_monthly_intervals(request.start_date, request.end_date)
    print(dates)
    for date_tuple in dates:

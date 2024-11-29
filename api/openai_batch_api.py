@@ -11,7 +11,40 @@ router = APIRouter()
 
 @router.post("/batch/create")
 def create_batch(batch_metadata: BatchMetadata, batch_api_service: OpenAIBatchService = Depends()):
-    #hier durch alle files in dem gegebenen Ordner data/news/[company_name] durchgehen und durch jede zeile in jedem file iterieren
+    """
+        Create batches of prompts from news articles for processing.
+
+        This endpoint generates JSONL files containing batches of prompts from
+        news article data for a specified company. The batches are organized by
+        year, week, and batch number to allow systematic processing of large datasets.
+
+        Parameters:
+        - batch_metadata (BatchMetadata): Metadata containing the company name
+          for which the batches are being created.
+        - batch_api_service (OpenAIBatchService): A service for creating prompts
+          and handling batch-related operations.
+
+        Processing Steps:
+        1. Identify the folder containing merged news data for the specified company.
+        2. Iterate through the news files and process each line to extract document
+           IDs, publication dates, and text.
+        3. Group articles into batches of size 10, organized by ISO week and year.
+        4. Create JSONL batch files with filenames indicating the company name, year,
+           week, and batch number (e.g., `batch_Siemens_2024_W48_1.jsonl`).
+        5. Use the `OpenAIBatchService` to generate and save the prompts.
+
+        Batch Filename Format:
+        - The batch filename follows the pattern:
+          `batch_<company_name>_<year>_W<week>_<batch_number>.jsonl`.
+
+        Example:
+        If the `BatchMetadata` contains a company name `Siemens`, the generated
+        batches look like:
+        - `batch_Siemens_2024_W48_1.jsonl`
+        - `batch_Siemens_2024_W48_2.jsonl`
+        - ...
+
+    """
     folder_path = "data/news/" + batch_metadata.company_name
     current_year, current_week = None, None
     batch_size = 10
@@ -41,7 +74,6 @@ def create_batch(batch_metadata: BatchMetadata, batch_api_service: OpenAIBatchSe
                                                               text,
                                                               batch_filename,
                                                               batch_metadata.company_name)
-
 
 @router.post("/batch/{company_name}")
 def send_batch(company_name: str, batch_api_service: OpenAIBatchService = Depends()):
