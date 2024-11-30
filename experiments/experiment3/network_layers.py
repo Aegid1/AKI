@@ -58,12 +58,6 @@ class MultiInputLSTMMacroFactors(nn.Module):
         stdv = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
-        torch.nn.init.zeros_(self.W_c_p)
-        torch.nn.init.zeros_(self.U_c_p)
-        torch.nn.init.zeros_(self.b_c_p)
-        torch.nn.init.zeros_(self.W_c_n)
-        torch.nn.init.zeros_(self.U_c_n)
-        torch.nn.init.zeros_(self.b_c_n)
 
     def forward(self, O, C):
         bs, seq_sz, _ = O.shape
@@ -78,19 +72,19 @@ class MultiInputLSTMMacroFactors(nn.Module):
             N_t = C[:, t, :]
 
             #if i have more features or more lstms in the previous step i need more matrices
-            i_p_t = torch.sigmoid(P_t @ self.W_i_p + h_t @ self.U_i_p + self.b_i_p) #TODO checken ob hier nicht die gleiche Matrix verwendet werden sollte
-            i_n_t = torch.sigmoid(N_t @ self.W_i_n + h_t @ self.U_i_n + self.b_i_n)
+            i_p_t = torch.relu(P_t @ self.W_i_p + h_t @ self.U_i_p + self.b_i_p) #TODO checken ob hier nicht die gleiche Matrix verwendet werden sollte
+            i_n_t = torch.relu(N_t @ self.W_i_n + h_t @ self.U_i_n + self.b_i_n)
 
             #this always stays the same
             #f_t = torch.sigmoid(P_t @ self.W_f + h_t @ self.U_f + self.b_f) #TODO Dont use the forget gate, maybe test a little with it -> oil or currency
 
             #if I have more features or more lstms in the previous step I need more matrices
-            C_p_tilde_t = torch.tanh(P_t @ self.W_c_p + h_t @ self.U_c_p + self.b_c_p)
-            C_n_tilde_t = torch.tanh(N_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
+            C_p_tilde_t = torch.relu(P_t @ self.W_c_p + h_t @ self.U_c_p + self.b_c_p)
+            C_n_tilde_t = torch.relu(N_t @ self.W_c_n + h_t @ self.U_c_n + self.b_c_n)
 
             #this always stays the same
-            o_t_1 = torch.sigmoid(P_t @ self.W_o + h_t @ self.U_o + self.b_o)
-            o_t_2 = torch.sigmoid(N_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_1 = torch.relu(P_t @ self.W_o + h_t @ self.U_o + self.b_o)
+            o_t_2 = torch.relu(N_t @ self.W_o + h_t @ self.U_o + self.b_o)
             o_t = o_t_1 + o_t_2 #TODO test around if this makes a difference or not -> both features are equally strong
 
             #if i have more features or more lstms in the previous step i need more values
@@ -98,8 +92,8 @@ class MultiInputLSTMMacroFactors(nn.Module):
             l_n_t = C_n_tilde_t * i_n_t
 
             #if i have more features or more lstms in the previous step i need more values, but matrix stays the same
-            u_p_t = torch.tanh(l_p_t @ self.W_a * c_t + self.b_a)
-            u_n_t = torch.tanh(l_n_t @ self.W_a * c_t + self.b_a)
+            u_p_t = torch.relu(l_p_t @ self.W_a * c_t + self.b_a)
+            u_n_t = torch.relu(l_n_t @ self.W_a * c_t + self.b_a)
 
             #if i have more features or more lstms in the previous step i need more matrices
             alpha_t = torch.softmax(torch.stack([u_p_t, u_n_t]), dim=0) #TODO check if this is the attention mechanism in the MILSTM
@@ -107,7 +101,7 @@ class MultiInputLSTMMacroFactors(nn.Module):
 
             #c_t = f_t * c_t + L_t TODO Dont use the forget gate, maybe test a little with it -> oil or currency
             c_t = c_t + L_t
-            h_t = o_t * torch.tanh(c_t)
+            h_t = o_t * torch.relu(c_t)
             hidden_seq.append(h_t.unsqueeze(0))
 
         hidden_seq = torch.cat(hidden_seq, dim=0)
@@ -139,7 +133,7 @@ class Attention(nn.Module):
 
         j_t = torch.tanh(temp + self.b_b)
         j_t = j_t @ self.v_b.t()
-        beta = torch.softmax(j_t, dim=0)
+        beta = torch.softmax(j_t, dim=1)
         #print(beta)
         y_tilde = beta * input_vector
         return y_tilde.squeeze()

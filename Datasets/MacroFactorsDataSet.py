@@ -20,7 +20,7 @@ class StocksDataSet(Dataset):
         self.oil_seq_size = oil_seq_size
         self.currency_seq_size = currency_seq_size
 
-        scalars_to_normalize = ["gdp", "unemployment_rate", "inflation", "interest_rates"]
+        scalars_to_normalize = ["gdp", "unemployment_rate", "inflation", "interest_rates", "stock_prices", "oil_prices", "currency_rates"]
         scalar_data = {key: [] for key in scalars_to_normalize}
 
         #at initialization get all scalars
@@ -30,19 +30,13 @@ class StocksDataSet(Dataset):
             for key in scalars_to_normalize:
                 scalar_data[key].append(item["features"][key][0])
 
-        self.scalar_scalers = {key: MinMaxScaler() for key in scalars_to_normalize}
+        self.scalers = {key: MinMaxScaler() for key in scalars_to_normalize}
         #the scalers for the scalars need to be fit during initialization
         for key in scalars_to_normalize:
             data = np.array(scalar_data[key]).reshape(-1, 1)
-            self.scalar_scalers[key].fit(data)
-            scaler_path = os.path.join("..", "experiments", "experiment3", "scalers", f"{key}_scaler.pkl")
-            joblib.dump(self.scalar_scalers[key], scaler_path)
-
-        self.sequence_scalers = {
-            "stock_prices": MinMaxScaler(),
-            "oil_prices": MinMaxScaler(),
-            "currency_rates": MinMaxScaler()
-        }
+            self.scalers[key].fit(data)
+            scaler_path = os.path.join("scalers", f"{key}_scaler.pkl")
+            joblib.dump(self.scalers[key], scaler_path)
 
     def __len__(self):
         return len(self.paths)
@@ -59,25 +53,25 @@ class StocksDataSet(Dataset):
         #normalization of sequential data
         target = item["target"]
         stock_prices_with_target = np.append(stock_prices, target)  # Combine stock prices and target
-        stock_prices_normalized_with_target = self.sequence_scalers["stock_prices"].fit_transform(
+        stock_prices_normalized_with_target = self.scalers["stock_prices"].transform(
             stock_prices_with_target.reshape(-1, 1)
         ).flatten()
 
         stock_prices_normalized = stock_prices_normalized_with_target[:-1]  # All except the last value
         target_normalized = stock_prices_normalized_with_target[-1]
 
-        oil_prices_normalized = self.sequence_scalers["oil_prices"].fit_transform(
+        oil_prices_normalized = self.scalers["oil_prices"].transform(
             np.array(oil_prices).reshape(-1, 1)
         ).flatten()
 
-        currency_rates_normalized = self.sequence_scalers["currency_rates"].fit_transform(
+        currency_rates_normalized = self.scalers["currency_rates"].transform(
             np.array(currency_rates).reshape(-1, 1)
         ).flatten()
 
         # normalization of scalars
         scalars_to_normalize = ["gdp", "unemployment_rate", "inflation", "interest_rates"]
         normalized_scalars = {
-            key: self.scalar_scalers[key].transform([[item["features"][key][0]]])[0][0]
+            key: self.scalers[key].transform([[item["features"][key][0]]])[0][0]
             for key in scalars_to_normalize
         }
 

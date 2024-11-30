@@ -47,7 +47,6 @@ class Model(nn.Module):
         milstm_dnn_output_squeezed = milstm_dnn_output.squeeze(1) #this layer serves as a transformation of the hidden_states to a single scalar
         stock_dnn_output = self.Stock_DNN(stock_price_out)
         stock_dnn_output_squeezed = stock_dnn_output.squeeze(1) #this layer serves as a transformation of the hidden_states to a single scalar
-
         #attention layer needs all inputs to be in the shape of [50]
         attention_out = self.Attention_layer(
             stock_tilde= stock_dnn_output_squeezed,

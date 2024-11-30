@@ -45,6 +45,7 @@ class StocksDataSet(Dataset):
             data = np.array(scalar_data[key]).reshape(-1, 1)
             self.scalar_scalers[key].fit(data)
             scaler_path = os.path.join("scalers", f"{key}_scaler.pkl")
+            print(scaler_path)
             joblib.dump(self.scalar_scalers[key], scaler_path)
 
         for company in company_names:
