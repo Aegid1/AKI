@@ -1,0 +1,6 @@
+document_id,date,short_term_sentiment,long_term_sentiment,relevancy_factor
+9ffb834a-a2c5-4283-aa56-903104e61b14,2024-10-23 13:16:57,-7,5,0.9
+c64a1bd3-5fbf-4c4f-8914-a6e73758ede1,2024-10-23 14:59:26,short-term sentiment: 9, long-term sentiment: 7, relev
+539a5f94-1f40-4068-9add-032fd10ca532,2024-10-23 15:18:46,-3,2,0.85
+0c0d95ce-cd58-469d-9631-524b63481eb1,2024-10-23 17:27:48,-3,-6,0.95
+7d9b0aac-48ef-4d82-83db-d5693824bdb3,2024-10-24 05:42:06,-2,6,0.9

@@ -1,0 +1,4 @@
+document_id,date,short_term_sentiment,long_term_sentiment,relevancy_factor
+4d4d8118-583a-46c7-9239-53c58f59930e,2023-10-17 14:54:32,To analyze the sentiment of the economic news article about SAP, first, we
+8a58b27f-08ee-413f-9d02-aa149983a4b8,2023-10-18 05:42:35,4,6,0.95
+69d18c38-6b8c-49b6-bd93-43bff36f8aa9,2023-10-18 06:26:27,-5,3,0.75

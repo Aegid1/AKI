@@ -1,0 +1,4 @@
+document_id,date,short_term_sentiment,long_term_sentiment,relevancy_factor
+759b1b53-ad53-4e61-8118-c7008bfffd05,2023-11-22 10:05:41,0, 0.5, 0
+11b096e8-99cb-470f-9db6-803484bf3d07,2023-11-22 13:14:00,8,7,0.95
+f5350ebd-5d1b-451b-a654-04dd4947a8e1,2023-11-23 16:19:00,-6,-4,0.85

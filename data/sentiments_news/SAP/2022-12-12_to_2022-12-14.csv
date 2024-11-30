@@ -1,0 +1,5 @@
+document_id,date,short_term_sentiment,long_term_sentiment,relevancy_factor
+aa2b0ded-f7c7-4728-a744-5fcf47961cfb,2022-12-12 16:02:40,-5,-3,0.9
+41232f25-0816-4c82-ac87-dbae662af00f,2022-12-12 16:15:00,-8,-5,0.95
+e6d46827-a7ba-4a6e-80dd-7e8ed846792f,2022-12-13 12:11:36,-5,-6,0.1
+c8eba9d2-aed3-4324-bc57-4ec6fbd02383,2022-12-14 01:58:55,-3,5,0.8

@@ -1,0 +1,5 @@
+document_id,date,short_term_sentiment,long_term_sentiment,relevancy_factor
+de7e8ed0-a5d4-4c19-a78d-e395b24bea32,2023-05-16 06:32:22,-5,-3,0.75
+96de1917-c75b-4e41-a811-fc902794a5bb,2023-05-16 14:21:59,The news article discusses inflation and its impact on wages, expectations, and economic
+ad5cb5cc-eac9-49e0-8de1-86c42da826b1,2023-05-19 04:33:00,-5,7,0.95
+40ec2153-00ea-4e8f-8e0f-f8572a821f8b,2023-05-19 14:05:54,-2,1,0.2

@@ -1,0 +1,6 @@
+document_id,date,short_term_sentiment,long_term_sentiment,relevancy_factor
+d781cb63-83a4-436c-92a4-f557f51d315e,2023-12-28 15:59:44,-4,2,0.7
+a9737fbb-8c3c-4117-861a-85454461e5c5,2023-12-29 06:39:00,-3,5,0.8
+8acb1e68-3e06-4989-8eca-bc6f0e1d5f73,2023-12-29 06:39:00,-5,7,0.9
+aa98b585-2876-493e-a791-1259b87e6d90,2023-12-29 09:29:52,8,5,0.95
+911b33c8-3bf2-4169-8aa9-125257e82abc,2023-12-29 18:33:00,For the short-term sentiment, the article indicates that Argentina, under its new
